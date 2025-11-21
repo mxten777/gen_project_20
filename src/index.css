@@ -1,0 +1,300 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+button:hover {
+  border-color: #646cff;
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+button:hover {
+  border-color: #646cff;
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}
+
+
+
+@layer base {
+  :root {
+    /* Base colors */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --background-secondary: 0 0% 98%;
+    --background-tertiary: 0 0% 96%;
+    --background-overlay: 0 0% 95%;
+    --background-elevated: 0 0% 97%;
+
+    /* Brand colors - Premium blue to purple gradient */
+    --brand-50: 248 250 252;
+    --brand-100: 241 245 249;
+    --brand-200: 226 232 240;
+    --brand-300: 203 213 225;
+    --brand-400: 148 163 184;
+    --brand-500: 100 116 139;
+    --brand-600: 71 85 105;
+    --brand-700: 51 65 85;
+    --brand-800: 30 41 59;
+    --brand-900: 15 23 42;
+
+    /* Gradient colors */
+    --gradient-primary-start: 221 83% 53%;
+    --gradient-primary-end: 262 83% 58%;
+    --gradient-secondary-start: 142 76% 36%;
+    --gradient-secondary-end: 158 64% 52%;
+    --gradient-accent-start: 271 81% 56%;
+    --gradient-accent-end: 316 73% 69%;
+
+    /* Semantic colors */
+    --success-50: 236 253 245;
+    --success-100: 209 250 229;
+    --success-500: 34 197 94;
+    --success-600: 22 163 74;
+    --success-700: 21 128 61;
+
+    --warning-50: 255 251 235;
+    --warning-100: 254 243 199;
+    --warning-500: 245 158 11;
+    --warning-600: 217 119 6;
+    --warning-700: 180 83 9;
+
+    --error-50: 254 242 242;
+    --error-100: 254 226 226;
+    --error-500: 239 68 68;
+    --error-600: 220 38 38;
+    --error-700: 185 28 28;
+
+    --info-50: 239 246 255;
+    --info-100: 219 234 254;
+    --info-500: 59 130 246;
+    --info-600: 37 99 235;
+    --info-700: 29 78 216;
+
+    /* Existing shadcn colors */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* Dark mode backgrounds */
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --background-secondary: 0 0% 7%;
+    --background-tertiary: 0 0% 10%;
+    --background-overlay: 0 0% 12%;
+    --background-elevated: 0 0% 8%;
+
+    /* Dark mode brand colors */
+    --brand-50: 15 23 42;
+    --brand-100: 30 41 59;
+    --brand-200: 51 65 85;
+    --brand-300: 71 85 105;
+    --brand-400: 100 116 139;
+    --brand-500: 148 163 184;
+    --brand-600: 203 213 225;
+    --brand-700: 226 232 240;
+    --brand-800: 241 245 249;
+    --brand-900: 248 250 252;
+
+    /* Dark mode gradients */
+    --gradient-primary-start: 221 83% 63%;
+    --gradient-primary-end: 262 83% 68%;
+    --gradient-secondary-start: 142 76% 46%;
+    --gradient-secondary-end: 158 64% 62%;
+    --gradient-accent-start: 271 81% 66%;
+    --gradient-accent-end: 316 73% 79%;
+
+    /* Dark mode semantic colors */
+    --success-50: 21 128 61;
+    --success-100: 22 163 74;
+    --success-500: 34 197 94;
+    --success-600: 74 222 128;
+    --success-700: 134 239 172;
+
+    --warning-50: 180 83 9;
+    --warning-100: 217 119 6;
+    --warning-500: 245 158 11;
+    --warning-600: 251 191 36;
+    --warning-700: 252 211 77;
+
+    --error-50: 185 28 28;
+    --error-100: 220 38 38;
+    --error-500: 239 68 68;
+    --error-600: 248 113 113;
+    --error-700: 252 165 165;
+
+    --info-50: 29 78 216;
+    --info-100: 37 99 235;
+    --info-500: 59 130 246;
+    --info-600: 96 165 250;
+    --info-700: 147 197 253;
+
+    /* Existing dark mode colors */
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
