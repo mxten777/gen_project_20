@@ -24,11 +24,7 @@ const pageVariants = {
   },
 }
 
-const pageTransition = {
-  type: "tween",
-  ease: "anticipate",
-  duration: 0.4,
-}
+
 
 export function PageTransition({ children }: PageTransitionProps) {
   const location = useLocation()
@@ -41,7 +37,7 @@ export function PageTransition({ children }: PageTransitionProps) {
         animate="in"
         exit="out"
         variants={pageVariants}
-        transition={pageTransition}
+        transition={{ duration: 0.4 }}
         className="w-full h-full"
       >
         {children}
@@ -69,11 +65,7 @@ export function SlideTransition({ children }: PageTransitionProps) {
     }),
   }
 
-  const slideTransition = {
-    type: "tween",
-    ease: "anticipate",
-    duration: 0.5,
-  }
+
 
   return (
     <AnimatePresence mode="wait" custom={location.pathname} initial={false}>
@@ -84,7 +76,7 @@ export function SlideTransition({ children }: PageTransitionProps) {
         animate="in"
         exit="out"
         variants={slideVariants}
-        transition={slideTransition}
+        transition={{ duration: 0.4 }}
         className="absolute inset-0 w-full h-full"
       >
         {children}
@@ -115,11 +107,7 @@ export function BlurTransition({ children }: PageTransitionProps) {
     },
   }
 
-  const blurTransition = {
-    type: "tween",
-    ease: [0.25, 0.46, 0.45, 0.94],
-    duration: 0.6,
-  }
+
 
   return (
     <AnimatePresence mode="wait" initial={false}>
@@ -129,7 +117,7 @@ export function BlurTransition({ children }: PageTransitionProps) {
         animate="in"
         exit="out"
         variants={blurVariants}
-        transition={blurTransition}
+        transition={{ duration: 0.6 }}
         className="w-full h-full"
       >
         {children}

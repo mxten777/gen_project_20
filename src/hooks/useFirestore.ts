@@ -2,13 +2,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { 
   doc, 
-  collection, 
   onSnapshot, 
-  setDoc, 
   getDoc, 
   updateDoc,
-  Unsubscribe,
-  FirestoreError 
+  type Unsubscribe,
+  type FirestoreError 
 } from 'firebase/firestore';
 import { db } from '@/firebase';
 
@@ -78,7 +76,7 @@ export function useFirestoreDoc<T>(
 
     try {
       const docRef = doc(db, path);
-      await updateDoc(docRef, updateData as any);
+      await updateDoc(docRef, updateData);
       
       // Also update localStorage as backup
       if (fallbackKey && data) {
@@ -97,7 +95,7 @@ export function useFirestoreDoc<T>(
       
       throw err;
     }
-  }, [db, path, fallbackKey, data]);
+  }, [path, fallbackKey, data]);
 
   useEffect(() => {
     if (!path) return;
@@ -165,21 +163,4 @@ export function useFirestoreDoc<T>(
   return { data, loading, error, update, refresh };
 }
 
-export function useFirestoreCollection<T>(
-  path: string,
-  fallbackKey?: string
-): FirestoreHookReturn<T[]> {
-  const [data, setData] = useState<T[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const refresh = useCallback(async () => {
-    // For collections, we'll implement this if needed
-  }, []);
-
-  const update = useCallback(async (updateData: Partial<T[]>) => {
-    // For collections, we'll implement this if needed
-  }, []);
-
-  return { data, loading, error, update, refresh };
-}
+// useFirestoreCollection can be implemented when needed
