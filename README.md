@@ -30,18 +30,51 @@ QR 출입 체크인 + 자동 팀배정(JDX) 웹앱 MVP
    npm install
    ```
 
-2. Firebase 설정:
-   - `src/firebase.ts`에 Firebase 프로젝트 설정 입력
-   - Firestore 보안 규칙 설정
+2. 환경 변수 설정:
+   ```bash
+   # .env 파일 생성 후 Firebase 설정 추가
+   cp .env.example .env
+   # .env 파일에 실제 Firebase 키 값들 입력
+   ```
 
-3. 개발 서버 실행:
+3. Firebase 설정:
+   - Firebase 콘솔에서 프로젝트 생성
+   - Firestore 데이터베이스 활성화
+   - 보안 규칙 설정 (README의 보안 규칙 참조)
+
+4. 개발 서버 실행:
    ```bash
    npm run dev
    ```
 
-4. 빌드:
+5. 빌드:
    ```bash
    npm run build
+   ```
+
+## 배포
+
+### Vercel 배포
+1. GitHub에 푸시:
+   ```bash
+   git add .
+   git commit -m "Deploy to production"
+   git push
+   ```
+
+2. Vercel 환경 변수 설정:
+   ```bash
+   vercel env add VITE_FIREBASE_API_KEY
+   vercel env add VITE_FIREBASE_AUTH_DOMAIN  
+   vercel env add VITE_FIREBASE_PROJECT_ID
+   vercel env add VITE_FIREBASE_STORAGE_BUCKET
+   vercel env add VITE_FIREBASE_MESSAGING_SENDER_ID
+   vercel env add VITE_FIREBASE_APP_ID
+   ```
+
+3. 프로덕션 배포:
+   ```bash
+   vercel --prod
    ```
 
 ## 사용법
@@ -90,9 +123,23 @@ events/{eventId}/teams/{teamId}
 - 서비스 워커를 통한 캐싱
 - 모바일 홈화면 설치 지원
 
+## 배포 URL
+
+🚀 **프로덕션**: https://gen-project-20-29tk4utk0-dongyeol-jungs-projects.vercel.app
+
 ## 개발자 노트
 
 - MVP 버전으로 핵심 기능 구현
 - QR 스캔은 카메라 권한 필요
 - 팀 배정 결과는 Firestore에 영구 저장
 - 실시간 동기화로 다중 기기 지원
+- Firebase 환경 변수 설정 완료
+- Vercel 자동 배포 구성 완료
+
+## 프로젝트 상태
+
+✅ **모든 기능 구현 완료**
+✅ **Firebase 실시간 연동**
+✅ **프로덕션 배포 완료**
+✅ **PWA 기능 지원**
+✅ **모바일 최적화**
