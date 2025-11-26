@@ -125,7 +125,8 @@ events/{eventId}/teams/{teamId}
 
 ## 배포 URL
 
-🚀 **프로덕션**: https://gen-project-20-29tk4utk0-dongyeol-jungs-projects.vercel.app
+🚀 **프로덕션**: https://gen-project-20-lk1vfrmyu-dongyeol-jungs-projects.vercel.app
+🔗 **GitHub**: https://github.com/mxten777/gen_project_20
 
 ## 개발자 노트
 
@@ -143,3 +144,23 @@ events/{eventId}/teams/{teamId}
 ✅ **프로덕션 배포 완료**
 ✅ **PWA 기능 지원**
 ✅ **모바일 최적화**
+
+## 향후 개발 계획
+
+🔄 **테스트 및 검증** (추후 예정)
+- 단위 테스트 (Jest + Testing Library)
+- 통합 테스트 (Cypress)
+- 성능 테스트 및 최적화
+- 접근성 (a11y) 테스트
+- 크로스 브라우저 테스트
+
+🚀 **추가 기능 고려사항**
+- 이벤트 템플릿 시스템
+- 참가자 데이터 분석 대시보드
+- 이메일/SMS 알림 시스템
+- 다국어 지원 (i18n)
+- 관리자 권한 세분화
+
+---
+
+**✨ MVP 완성! 실제 이벤트에서 바로 사용 가능합니다! ✨**

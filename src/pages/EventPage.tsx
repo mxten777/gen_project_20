@@ -643,7 +643,7 @@ const EventPage = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm hover:shadow-xl transition-shadow duration-200">
+            <Card variant="glass" className="shadow-lg border-0 hover:shadow-xl transition-shadow duration-200">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-xl">
                   <Image className="h-6 w-6 text-blue-500" />
@@ -708,7 +708,7 @@ const EventPage = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm hover:shadow-xl transition-shadow duration-200">
+            <Card variant="glass" className="shadow-lg border-0 hover:shadow-xl transition-shadow duration-200">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-xl">
                   <Settings className="h-6 w-6 text-purple-500" />
@@ -791,7 +791,7 @@ const EventPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
+          <Card variant="glass" className="shadow-lg border-0">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-xl">
                 <Users className="h-6 w-6 text-green-500" />
@@ -825,11 +825,13 @@ const EventPage = () => {
                   {participants.map((p, index) => (
                     <motion.div
                       key={p.id}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: index * 0.05 }}
+                      initial={{ opacity: 0, y: 50 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, margin: "-100px" }}
+                      transition={{ duration: 0.6, delay: index * 0.05 }}
                       className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-4 shadow-md border border-gray-100 hover:shadow-lg transition-shadow duration-200"
                     >
+
                       <div className="flex items-center gap-3 mb-2">
                         <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
                           {p.name.charAt(0)}
@@ -878,7 +880,7 @@ const EventPage = () => {
             transition={{ delay: 0.4 }}
             className="mt-8"
           >
-            <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
+            <Card variant="glass" className="shadow-lg border-0">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-xl">
                   <Trophy className="h-6 w-6 text-yellow-500" />
@@ -906,8 +908,9 @@ const EventPage = () => {
                     <motion.div
                       key={team.id}
                       initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, margin: "-50px" }}
+                      transition={{ duration: 0.6, delay: index * 0.1 }}
                       className={`bg-gradient-to-br ${getTeamColor(team.color)} border border-opacity-20 rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-200`}
                     >
                       <div className="flex items-center gap-3 mb-4">

@@ -38,6 +38,9 @@ export function PageTransition({ children }: PageTransitionProps) {
         exit="out"
         variants={pageVariants}
         transition={{ duration: 0.4 }}
+        drag="x"
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.1}
         className="w-full h-full"
       >
         {children}
