@@ -125,7 +125,7 @@ events/{eventId}/teams/{teamId}
 
 ## 배포 URL
 
-🚀 **프로덕션**: https://gen-project-20-lk1vfrmyu-dongyeol-jungs-projects.vercel.app
+🚀 **프로덕션**: https://gen-project-20-b8hvnpdmd-dongyeol-jungs-projects.vercel.app
 🔗 **GitHub**: https://github.com/mxten777/gen_project_20
 
 ## 개발자 노트
