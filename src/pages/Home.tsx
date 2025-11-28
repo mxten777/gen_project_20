@@ -84,7 +84,21 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4 relative">
+    <div className="min-h-screen w-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Enhanced Background Pattern */}
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute top-10 left-10 w-40 h-40 bg-purple-300 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-10 right-10 w-48 h-48 bg-blue-300 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-56 h-56 bg-indigo-300 rounded-full blur-3xl animate-pulse delay-500"></div>
+        <div className="absolute top-20 right-20 w-32 h-32 bg-purple-400 rounded-full blur-2xl animate-bounce"></div>
+        <div className="absolute bottom-20 left-20 w-28 h-28 bg-blue-400 rounded-full blur-2xl animate-bounce delay-700"></div>
+      </div>
+
+      {/* Floating Elements */}
+      <div className="absolute top-1/4 left-1/4 w-3 h-3 bg-purple-400 rounded-full animate-ping"></div>
+      <div className="absolute top-3/4 right-1/4 w-4 h-4 bg-blue-400 rounded-full animate-ping delay-300"></div>
+      <div className="absolute bottom-1/4 left-1/3 w-2 h-2 bg-indigo-400 rounded-full animate-ping delay-500"></div>
+      <div className="absolute top-1/3 right-1/3 w-2.5 h-2.5 bg-purple-500 rounded-full animate-ping delay-800"></div>
       {/* Theme Toggle */}
       <div className="absolute top-4 right-4 z-10">
         <ThemeToggle />

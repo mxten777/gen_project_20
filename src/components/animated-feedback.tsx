@@ -177,7 +177,17 @@ export function CheckInSuccess({ isVisible }: { isVisible: boolean }) {
 }
 
 // Team assignment success animation
-export function TeamAssignmentSuccess({ isVisible, teamCount }: { isVisible: boolean, teamCount: number }) {
+export function TeamAssignmentSuccess({ isVisible, teamCount, onComplete }: { isVisible: boolean, teamCount: number, onComplete?: () => void }) {
+  React.useEffect(() => {
+    if (isVisible) {
+      // 4초 후 자동으로 사라지도록 설정
+      const timer = setTimeout(() => {
+        onComplete?.();
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [isVisible, onComplete]);
+
   return (
     <AnimatePresence>
       {isVisible && (

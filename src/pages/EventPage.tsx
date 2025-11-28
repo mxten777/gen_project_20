@@ -190,12 +190,19 @@ const EventPage = () => {
 
         ctx.fillStyle = '#ffffff';
         ctx.font = '24px Arial';
-        ctx.fillText(new Date(event.date).toLocaleDateString('ko-KR', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          weekday: 'long'
-        }), 400, 270);
+        ctx.fillText((() => {
+          try {
+            const date = new Date(event.date);
+            return isNaN(date.getTime()) ? '날짜 정보 없음' : date.toLocaleDateString('ko-KR', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              weekday: 'long'
+            });
+          } catch {
+            return '날짜 정보 없음';
+          }
+        })(), 400, 270);
 
         ctx.fillStyle = '#ffffff';
         ctx.font = '20px Arial';
@@ -471,39 +478,173 @@ const EventPage = () => {
     
     if (!eventId) return;
 
-    // JDX algorithm implementation
+    // 멋진 팀 이름들
+    const teamNames = [
+      '불꽃 드래곤즈', '천둥 매들러스', '얼음 울프스', '바람 이글스', '대지 베어스',
+      '번개 타이거즈', '화산 라이언즈', '폭풍 팬더스', '별빛 울브스', '달빛 폭스',
+      '태양 워리어즈', '달 워리어즈', '별 워리어즈', '숲의 수호자들', '바다의 수호자들',
+      '산의 수호자들', '불의 수호자들', '얼음의 수호자들', '바람의 수호자들', '대지의 수호자들'
+    ];
+
+    // 팀 초기화
     const teams = Array.from({ length: numTeams }, (_, i) => ({
       id: `team_${i + 1}`,
-      name: `Team ${String.fromCharCode(65 + i)}`,
+      name: teamNames[i] || `팀 ${String.fromCharCode(65 + i)}`,
       color: ['blue', 'red', 'green', 'yellow', 'purple', 'orange'][i] || 'gray',
       members: [] as Participant[],
+      totalSkill: 0,
     }));
 
-    let sortedParticipants = [...participants];
-    if (balanceType === 'balanced' && participants.some(p => p.skill)) {
-      sortedParticipants.sort((a, b) => (b.skill || 0) - (a.skill || 0));
+    let allParticipants = [...participants];
+
+    // 1단계: 인원 수 기반 기본 배정
+    const totalParticipants = allParticipants.length;
+    const baseMembersPerTeam = Math.floor(totalParticipants / numTeams); // 몫
+    const remainder = totalParticipants % numTeams; // 나머지 (깍뚜기 팀 수)
+
+    console.log(`총 ${totalParticipants}명, ${numTeams}팀, 각 팀 기본 ${baseMembersPerTeam}명, 깍뚜기 ${remainder}팀`);
+
+    // 참가자들을 랜덤하게 섞기 (공정한 배정을 위해)
+    allParticipants.sort(() => Math.random() - 0.5);
+
+    let participantIndex = 0;
+
+    // 각 팀에 기본 인원 배정
+    for (let teamIndex = 0; teamIndex < numTeams; teamIndex++) {
+      const membersForThisTeam = baseMembersPerTeam + (teamIndex < remainder ? 1 : 0); // 깍뚜기 팀은 +1
+      
+      for (let i = 0; i < membersForThisTeam && participantIndex < totalParticipants; i++) {
+        const participant = allParticipants[participantIndex];
+        teams[teamIndex].members.push(participant);
+        teams[teamIndex].totalSkill += participant.skill || 0;
+        participantIndex++;
+      }
+    }
+
+    console.log('기본 배정 후 팀 상태:', teams.map(t => ({ name: t.name, count: t.members.length, totalSkill: t.totalSkill })));
+
+    // 2단계: 실력 균형 맞추기 (balanceType에 따라)
+    if (balanceType === 'balanced') {
+      // 실력 점수 기반 균형 맞추기
+      const maxIterations = 50; // 무한 루프 방지
+      let iterations = 0;
+      let hasChanges = true;
+
+      while (hasChanges && iterations < maxIterations) {
+        hasChanges = false;
+        iterations++;
+
+        // 각 팀의 평균 실력 계산
+        const teamAverages = teams.map(team => {
+          const skillSum = team.members.reduce((sum, p) => sum + (p.skill || 0), 0);
+          return skillSum / team.members.length;
+        });
+
+        // 가장 실력이 높은 팀과 낮은 팀 찾기
+        let maxAvgIndex = 0;
+        let minAvgIndex = 0;
+        let maxAvg = teamAverages[0];
+        let minAvg = teamAverages[0];
+
+        for (let i = 1; i < teams.length; i++) {
+          if (teamAverages[i] > maxAvg) {
+            maxAvg = teamAverages[i];
+            maxAvgIndex = i;
+          }
+          if (teamAverages[i] < minAvg) {
+            minAvg = teamAverages[i];
+            minAvgIndex = i;
+          }
+        }
+
+        // 실력 차이가 2점 이상 나면 교환 시도
+        if (maxAvg - minAvg >= 2) {
+          const highTeam = teams[maxAvgIndex];
+          const lowTeam = teams[minAvgIndex];
+
+          // 높은 팀에서 낮은 실력자를, 낮은 팀에서 높은 실력자를 찾아 교환
+          let bestSwap = null;
+          let bestImprovement = 0;
+
+          for (const highMember of highTeam.members) {
+            for (const lowMember of lowTeam.members) {
+              const highSkill = highMember.skill || 0;
+              const lowSkill = lowMember.skill || 0;
+
+              if (highSkill > lowSkill) {
+                // 교환 후 평균 차이 계산
+                const newHighAvg = (teamAverages[maxAvgIndex] * highTeam.members.length - highSkill + lowSkill) / highTeam.members.length;
+                const newLowAvg = (teamAverages[minAvgIndex] * lowTeam.members.length - lowSkill + highSkill) / lowTeam.members.length;
+                const improvement = (maxAvg - minAvg) - Math.abs(newHighAvg - newLowAvg);
+
+                if (improvement > bestImprovement) {
+                  bestImprovement = improvement;
+                  bestSwap = { highMember, lowMember };
+                }
+              }
+            }
+          }
+
+          // 최적 교환 실행
+          if (bestSwap) {
+            const { highMember, lowMember } = bestSwap;
+            
+            // 멤버 교환
+            const highIndex = highTeam.members.indexOf(highMember);
+            const lowIndex = lowTeam.members.indexOf(lowMember);
+            
+            highTeam.members[highIndex] = lowMember;
+            lowTeam.members[lowIndex] = highMember;
+            
+            // 실력 합계 업데이트
+            highTeam.totalSkill = highTeam.totalSkill - (highMember.skill || 0) + (lowMember.skill || 0);
+            lowTeam.totalSkill = lowTeam.totalSkill - (lowMember.skill || 0) + (highMember.skill || 0);
+            
+            hasChanges = true;
+            console.log(`교환 실행: ${highMember.name} ↔ ${lowMember.name}, 개선도: ${bestImprovement.toFixed(2)}`);
+          }
+        }
+      }
+
+      console.log(`균형 맞추기 완료: ${iterations}회 반복`);
     } else if (balanceType === 'random') {
-      sortedParticipants = participants.sort(() => Math.random() - 0.5);
+      // 이미 랜덤하게 배정되어 있으므로 추가 작업 없음
     } else if (balanceType === 'mixed') {
-      // Mixed: balance first, then randomize within similar skill groups
-      const skillGroups = sortedParticipants.reduce((groups, p) => {
+      // 혼합 배정: 실력 그룹별로 재배치
+      const skillGroups = allParticipants.reduce((groups, p) => {
         const skill = p.skill || 0;
-        if (!groups[skill]) groups[skill] = [];
-        groups[skill].push(p);
+        const groupKey = Math.floor(skill / 3) * 3; // 3점 단위로 그룹화
+        if (!groups[groupKey]) groups[groupKey] = [];
+        groups[groupKey].push(p);
         return groups;
       }, {} as Record<number, Participant[]>);
 
-      sortedParticipants = Object.values(skillGroups).flatMap(group =>
-        group.sort(() => Math.random() - 0.5)
-      );
+      // 각 그룹을 팀별로 고르게 분배
+      Object.values(skillGroups).forEach(group => {
+        group.sort(() => Math.random() - 0.5);
+        
+        group.forEach((participant, index) => {
+          const teamIndex = index % numTeams;
+          // 기존 팀에서 제거
+          const oldTeamIndex = teams.findIndex(t => t.members.some(m => m.id === participant.id));
+          if (oldTeamIndex !== -1) {
+            teams[oldTeamIndex].members = teams[oldTeamIndex].members.filter(m => m.id !== participant.id);
+            teams[oldTeamIndex].totalSkill -= participant.skill || 0;
+          }
+          
+          // 새 팀에 추가
+          teams[teamIndex].members.push(participant);
+          teams[teamIndex].totalSkill += participant.skill || 0;
+        });
+      });
     }
 
-    sortedParticipants.forEach((p, index) => {
-      const teamIndex = index % numTeams;
-      teams[teamIndex].members.push(p);
-    });
-
-    console.log('Teams created:', teams);
+    console.log('최종 팀 배정 결과:', teams.map(t => ({ 
+      name: t.name, 
+      count: t.members.length, 
+      totalSkill: t.totalSkill,
+      avgSkill: t.members.length > 0 ? (t.totalSkill / t.members.length).toFixed(1) : '0'
+    })));
 
     // Update participants with team assignment
     const updatedParticipants = participants.map(p => {
@@ -566,6 +707,84 @@ const EventPage = () => {
     });
   };
 
+  // Export teams to CSV
+  const exportToCSV = () => {
+    if (teams.length === 0) {
+      toast({
+        title: '내보내기 실패',
+        description: '배정된 팀이 없습니다.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Create CSV content
+    const csvRows = [
+      ['팀 이름', '참가자 이름', '실력 점수', '전화번호', '체크인 시간']
+    ];
+
+    teams.forEach(team => {
+      team.members.forEach(member => {
+        csvRows.push([
+          team.name,
+          member.name,
+          member.skill?.toString() || '',
+          member.phone || '',
+          new Date(member.checkinAt).toLocaleString('ko-KR')
+        ]);
+      });
+    });
+
+    // Convert to CSV string
+    const csvContent = csvRows.map(row => 
+      row.map(field => `"${field.replace(/"/g, '""')}"`).join(',')
+    ).join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${event?.name}_팀배정결과.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: '내보내기 완료',
+      description: '팀 배정 결과가 CSV 파일로 저장되었습니다.',
+    });
+  };
+
+  // Share to KakaoTalk
+  const shareToKakaoTalk = () => {
+    const shareUrl = window.location.href;
+    const shareText = `${event?.name} 이벤트 팀 배정 결과가 나왔어요!\n\n${shareUrl}`;
+
+    if (navigator.share && navigator.canShare({ url: shareUrl, text: shareText })) {
+      navigator.share({
+        title: `${event?.name} - 팀 배정 결과`,
+        text: shareText,
+        url: shareUrl,
+      }).catch(() => {
+        // Fallback to clipboard
+        navigator.clipboard.writeText(shareText);
+        toast({
+          title: '링크 복사됨',
+          description: '카카오톡 공유 링크가 클립보드에 복사되었습니다.',
+        });
+      });
+    } else {
+      // Fallback for browsers without Web Share API
+      navigator.clipboard.writeText(shareText);
+      toast({
+        title: '링크 복사됨',
+        description: '카카오톡 공유 링크가 클립보드에 복사되었습니다.',
+      });
+    }
+  };
+
   const checkAdmin = () => {
     if (adminToken === 'admin') {
       setIsAdmin(true);
@@ -593,8 +812,25 @@ const EventPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      <div className="max-w-6xl mx-auto p-4 relative">
+    <div className="h-screen w-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4 relative" style={{ minHeight: '100vh', height: '100vh' }}>
+      {/* Enhanced Background Pattern */}
+      <div className="absolute inset-0 opacity-15">
+        <div className="absolute top-10 left-10 w-48 h-48 bg-slate-300 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-10 right-10 w-56 h-56 bg-blue-300 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-indigo-300 rounded-full blur-3xl animate-pulse delay-500"></div>
+        <div className="absolute top-20 right-20 w-36 h-36 bg-slate-400 rounded-full blur-2xl animate-bounce"></div>
+        <div className="absolute bottom-20 left-20 w-32 h-32 bg-blue-400 rounded-full blur-2xl animate-bounce delay-700"></div>
+      </div>
+
+      {/* Enhanced Floating Elements */}
+      <div className="absolute top-1/4 left-1/4 w-3 h-3 bg-slate-400 rounded-full animate-ping"></div>
+      <div className="absolute top-3/4 right-1/4 w-4 h-4 bg-blue-400 rounded-full animate-ping delay-300"></div>
+      <div className="absolute bottom-1/4 left-1/3 w-2 h-2 bg-indigo-400 rounded-full animate-ping delay-500"></div>
+      <div className="absolute top-1/3 right-1/3 w-2.5 h-2.5 bg-slate-500 rounded-full animate-ping delay-800"></div>
+      <div className="absolute bottom-1/3 left-1/4 w-1.5 h-1.5 bg-blue-500 rounded-full animate-ping delay-1200"></div>
+      <div className="h-full flex items-center justify-center">
+        <div className="w-full max-w-6xl mx-auto relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden" style={{ maxHeight: '90vh' }}>
+          <div className="overflow-y-auto p-6" style={{ maxHeight: '90vh' }}>
         {/* Theme Toggle & Connection Status */}
         <div className="absolute top-4 right-4 z-10 flex items-center gap-3">
           <ConnectionIndicator />
@@ -608,6 +844,7 @@ const EventPage = () => {
         <TeamAssignmentSuccess
           isVisible={showTeamSuccess}
           teamCount={assignedTeamCount}
+          onComplete={() => setShowTeamSuccess(false)}
         />
 
         {/* Header */}
@@ -624,7 +861,16 @@ const EventPage = () => {
               <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 {event.name}
               </h1>
-              <p className="text-gray-600 mt-1">{new Date(event.date).toLocaleDateString('ko-KR')}</p>
+              <p className="text-gray-600 mt-1">
+                {(() => {
+                  try {
+                    const date = new Date(event.date);
+                    return isNaN(date.getTime()) ? '날짜 정보 없음' : date.toLocaleDateString('ko-KR');
+                  } catch {
+                    return '날짜 정보 없음';
+                  }
+                })()}
+              </p>
             </div>
           </div>
           
@@ -649,10 +895,12 @@ const EventPage = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <Card variant="glass" className="shadow-lg border-0 hover:shadow-xl transition-shadow duration-200">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2 text-xl">
-                  <Image className="h-6 w-6 text-blue-500" />
+            <Card variant="glass" className="shadow-2xl border-0 bg-white/95 backdrop-blur-xl relative overflow-hidden rounded-3xl hover:shadow-3xl transition-all duration-500">
+              <CardHeader className="pb-6">
+                <CardTitle className="flex items-center gap-3 text-2xl font-bold">
+                  <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl shadow-lg">
+                    <Image className="h-6 w-6 text-white" />
+                  </div>
                   프리미엄 초대장
                 </CardTitle>
               </CardHeader>
@@ -714,10 +962,12 @@ const EventPage = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <Card variant="glass" className="shadow-lg border-0 hover:shadow-xl transition-shadow duration-200">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2 text-xl">
-                  <Settings className="h-6 w-6 text-purple-500" />
+            <Card variant="glass" className="shadow-2xl border-0 bg-white/95 backdrop-blur-xl relative overflow-hidden rounded-3xl hover:shadow-3xl transition-all duration-500">
+              <CardHeader className="pb-6">
+                <CardTitle className="flex items-center gap-3 text-2xl font-bold">
+                  <div className="p-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl shadow-lg">
+                    <Settings className="h-6 w-6 text-white" />
+                  </div>
                   팀 배정 관리
                 </CardTitle>
               </CardHeader>
@@ -778,10 +1028,10 @@ const EventPage = () => {
                     </div>
                     <Button 
                       onClick={assignTeams} 
-                      className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 flex items-center gap-2"
+                      className="w-full h-14 text-lg font-bold bg-gradient-to-r from-purple-500 via-blue-500 to-indigo-500 hover:from-purple-600 hover:via-blue-600 hover:to-indigo-600 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-[1.02] transform-gpu flex items-center gap-3 disabled:hover:scale-100 rounded-2xl"
                       disabled={participants.length === 0}
                     >
-                      <Trophy className="h-4 w-4" />
+                      <Trophy className="h-6 w-6" />
                       팀 배정 실행 {participants.length === 0 && '(참가자 없음)'}
                     </Button>
                   </motion.div>
@@ -797,12 +1047,14 @@ const EventPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <Card variant="glass" className="shadow-lg border-0">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <Users className="h-6 w-6 text-green-500" />
+          <Card variant="glass" className="shadow-2xl border-0 bg-white/95 backdrop-blur-xl relative overflow-hidden rounded-3xl">
+            <CardHeader className="pb-6">
+              <CardTitle className="flex items-center gap-3 text-2xl font-bold">
+                <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl shadow-lg">
+                  <Users className="h-6 w-6 text-white" />
+                </div>
                 참가자 목록
-                <span className="ml-auto text-sm font-normal text-gray-500">
+                <span className="ml-auto text-lg font-normal text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
                   {participants.length}명
                 </span>
               </CardTitle>
@@ -845,10 +1097,17 @@ const EventPage = () => {
                         <div className="flex-1">
                           <h3 className="font-semibold text-gray-800">{p.name}</h3>
                           <p className="text-xs text-gray-500">
-                            {new Date(p.checkinAt).toLocaleTimeString('ko-KR', { 
-                              hour: '2-digit', 
-                              minute: '2-digit' 
-                            })}
+                            {(() => {
+                              try {
+                                const date = new Date(p.checkinAt);
+                                return isNaN(date.getTime()) ? '시간 정보 없음' : date.toLocaleTimeString('ko-KR', { 
+                                  hour: '2-digit', 
+                                  minute: '2-digit' 
+                                });
+                              } catch {
+                                return '시간 정보 없음';
+                              }
+                            })()}
                           </p>
                         </div>
                       </div>
@@ -886,26 +1145,33 @@ const EventPage = () => {
             transition={{ delay: 0.4 }}
             className="mt-8"
           >
-            <Card variant="glass" className="shadow-lg border-0">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2 text-xl">
-                  <Trophy className="h-6 w-6 text-yellow-500" />
+            <Card variant="glass" className="shadow-2xl border-0 bg-white/95 backdrop-blur-xl relative overflow-hidden rounded-3xl">
+              <CardHeader className="pb-6">
+                <CardTitle className="flex items-center gap-3 text-2xl font-bold">
+                  <div className="p-2 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl shadow-lg">
+                    <Trophy className="h-6 w-6 text-white" />
+                  </div>
                   팀 배정 결과
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="ml-auto flex items-center gap-2"
-                    onClick={() => {
-                      // Export functionality could be added here
-                      toast({
-                        title: '내보내기',
-                        description: 'CSV 내보내기 기능은 추후 추가 예정입니다.',
-                      });
-                    }}
-                  >
-                    <Download className="h-4 w-4" />
-                    내보내기
-                  </Button>
+                  <div className="ml-auto flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex items-center gap-2 h-10 px-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 hover:from-green-600 hover:to-emerald-600 rounded-xl shadow-lg"
+                      onClick={shareToKakaoTalk}
+                    >
+                      <Share2 className="h-4 w-4" />
+                      카톡 공유
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex items-center gap-2 h-10 px-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white border-0 hover:from-blue-600 hover:to-purple-600 rounded-xl shadow-lg"
+                      onClick={exportToCSV}
+                    >
+                      <Download className="h-4 w-4" />
+                      CSV 내보내기
+                    </Button>
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -947,6 +1213,8 @@ const EventPage = () => {
             </Card>
           </motion.div>
         )}
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -32,6 +32,38 @@ const CheckIn = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const scannerRef = useRef<QrScanner | null>(null);
   const { toast } = useToast();
+  useEffect(() => {
+    // Firebase 연결 상태 테스트
+    const testFirebaseConnection = async () => {
+      console.log('🔍 Firebase 연결 테스트 시작');
+      console.log('Firebase DB 객체:', db);
+      
+      if (!db) {
+        console.warn('❌ Firebase DB가 초기화되지 않음');
+        return;
+      }
+
+      try {
+        // 간단한 읽기 테스트
+        await getDoc(doc(db, 'test', 'connection'));
+        console.log('✅ Firebase 읽기 테스트 성공');
+        
+        // 간단한 쓰기 테스트
+        await setDoc(doc(db, 'test', 'connection'), { 
+          timestamp: new Date(),
+          test: true 
+        });
+        console.log('✅ Firebase 쓰기 테스트 성공');
+        
+      } catch (error) {
+        console.error('❌ Firebase 연결 테스트 실패:', error);
+      }
+    };
+
+    // 페이지 로드 후 2초 뒤에 테스트
+    const timer = setTimeout(testFirebaseConnection, 2000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (scanning && videoRef.current) {
@@ -93,19 +125,20 @@ const CheckIn = () => {
   }, [scanning, toast, eventId]);
 
   const handleCheckIn = async () => {
-    console.log('handleCheckIn called', { name, eventId, phone, skill });
+    console.log('🔄 handleCheckIn 시작', { name, eventId, phone, skill });
     
-    if (!name || !eventId) {
-      console.log('Missing name or eventId');
+    if (!name || !eventId || !phone || skill === '') {
+      console.log('❌ 필수 입력 누락');
       toast({
         title: '입력 오류',
-        description: '이름을 입력해주세요.',
+        description: '이름, 전화번호, 실력 점수를 모두 입력해주세요.',
         variant: 'destructive',
       });
       return;
     }
 
     setIsLoading(true);
+    console.log('⏳ 로딩 시작, Firebase 연결 상태:', !!db);
     
     try {
     let participants: Participant[] = [];
@@ -207,34 +240,63 @@ const CheckIn = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-blue-100 flex items-center justify-center p-4 relative">
+    <div className="min-h-screen w-screen bg-gradient-to-br from-emerald-50 via-green-50 to-blue-100 p-4 relative overflow-hidden flex items-center justify-center">
+      {/* Enhanced Background Pattern */}
+      <div className="absolute inset-0 opacity-15">
+        <div className="absolute top-20 left-10 w-48 h-48 bg-emerald-300 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-10 w-56 h-56 bg-blue-300 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-green-300 rounded-full blur-3xl animate-pulse delay-500"></div>
+        <div className="absolute top-10 right-20 w-36 h-36 bg-emerald-400 rounded-full blur-2xl animate-bounce"></div>
+        <div className="absolute bottom-10 left-20 w-32 h-32 bg-blue-400 rounded-full blur-2xl animate-bounce delay-700"></div>
+      </div>
+
+      {/* Enhanced Floating Elements */}
+      <div className="absolute top-1/4 left-1/4 w-3 h-3 bg-emerald-400 rounded-full animate-ping"></div>
+      <div className="absolute top-3/4 right-1/4 w-4 h-4 bg-blue-400 rounded-full animate-ping delay-300"></div>
+      <div className="absolute bottom-1/4 left-1/3 w-2 h-2 bg-green-400 rounded-full animate-ping delay-500"></div>
+      <div className="absolute top-1/3 right-1/3 w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping delay-800"></div>
+      <div className="absolute bottom-1/3 left-1/4 w-1.5 h-1.5 bg-blue-500 rounded-full animate-ping delay-1200"></div>
+
       {/* Theme Toggle */}
-      <div className="absolute top-4 right-4 z-10">
+      <div className="absolute top-4 right-4 z-20">
         <ThemeToggle />
       </div>
 
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
-        className="w-full max-w-md"
+        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.8, ease: 'easeOut', type: 'spring', stiffness: 100 }}
+        className="w-full max-w-md relative z-10"
       >
-        <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
-          <CardHeader className="text-center pb-4">
+        <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-xl relative overflow-hidden rounded-3xl">
+          {/* Enhanced Card Background Pattern */}
+          <div className="absolute inset-0 bg-gradient-to-br from-white/70 via-emerald-50/50 to-blue-50/40"></div>
+          <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-emerald-200/40 to-transparent rounded-full"></div>
+          <div className="absolute bottom-0 left-0 w-40 h-40 bg-gradient-to-tr from-blue-200/40 to-transparent rounded-full"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-gradient-to-r from-emerald-300/25 to-blue-300/25 rounded-full blur-sm"></div>
+
+          {/* Premium Multi-layer Shimmer Effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-pulse opacity-40"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-100/20 to-transparent skew-x-12 animate-pulse opacity-30 delay-1000"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-100/15 to-transparent -skew-x-6 animate-pulse opacity-20 delay-2000"></div>
+          <CardHeader className="text-center pb-6 relative z-10">
             <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-              className="mx-auto mb-4 p-3 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full w-fit"
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ delay: 0.2, type: 'spring', stiffness: 200, damping: 15 }}
+              className="mx-auto mb-6 p-4 bg-gradient-to-r from-emerald-500 via-green-500 to-blue-500 rounded-full w-fit shadow-lg"
             >
-              <CheckCircle className="h-8 w-8 text-white" />
+              <CheckCircle className="h-10 w-10 text-white" />
             </motion.div>
-            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
+            <CardTitle className="text-4xl font-bold bg-gradient-to-r from-emerald-600 via-green-600 to-blue-600 bg-clip-text text-transparent mb-3">
               이벤트 체크인
             </CardTitle>
-            <p className="text-gray-600 mt-2">QR 코드를 스캔하거나 정보를 입력하세요</p>
+            <p className="text-gray-600 mt-3 text-center max-w-sm mx-auto leading-relaxed">
+              QR 코드를 스캔하거나 정보를 입력하세요<br/>
+              <span className="text-sm font-semibold text-emerald-600">이름, 전화번호, 실력 점수가 모두 필요합니다</span>
+            </p>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 relative z-10 p-8">
             {scanning ? (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -247,7 +309,7 @@ const CheckIn = () => {
                     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 border-2 border-white rounded-lg"></div>
                   </div>
                 </div>
-                <Button onClick={stopScan} className="w-full flex items-center gap-2" variant="outline">
+                <Button onClick={stopScan} className="w-full h-12 flex items-center gap-2 rounded-xl border-2 border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50 transition-all duration-300" variant="outline">
                   <AlertCircle className="h-4 w-4" />
                   스캔 중지
                 </Button>
@@ -258,7 +320,7 @@ const CheckIn = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
               >
-                <Button onClick={startScan} className="w-full h-12 bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 flex items-center gap-2">
+                <Button onClick={startScan} className="w-full h-12 bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 flex items-center gap-2 rounded-xl">
                   <Camera className="h-5 w-5" />
                   QR 코드 스캔
                 </Button>
@@ -269,13 +331,15 @@ const CheckIn = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
-              className="relative"
+              className="relative py-4"
             >
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300"></div>
               </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-gray-500 font-medium">또는 수동 입력</span>
+              <div className="relative flex justify-center">
+                <span className="px-4 bg-white text-gray-500 font-medium text-sm border border-gray-300 rounded-full py-1">
+                  또는 수동 입력
+                </span>
               </div>
             </motion.div>
 
@@ -293,7 +357,7 @@ const CheckIn = () => {
                 placeholder="이름을 입력하세요"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="h-12 text-lg"
+                className="h-14 text-lg border-2 border-emerald-200/50 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100/50 transition-all duration-300 bg-white/90 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-md focus:shadow-lg"
                 disabled={isLoading}
               />
             </motion.div>
@@ -304,12 +368,14 @@ const CheckIn = () => {
               transition={{ delay: 0.6 }}
               className="space-y-2"
             >
-              <label className="text-sm font-medium text-gray-700">전화번호 (선택)</label>
+              <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                📱 전화번호 *
+              </label>
               <Input
                 placeholder="010-1234-5678"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="h-12 text-lg"
+                className="h-14 text-lg border-2 border-emerald-200/50 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100/50 transition-all duration-300 bg-white/90 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-md focus:shadow-lg"
                 disabled={isLoading}
               />
             </motion.div>
@@ -320,28 +386,29 @@ const CheckIn = () => {
               transition={{ delay: 0.7 }}
               className="space-y-2"
             >
-              <label className="text-sm font-medium text-gray-700">실력 점수 (선택)</label>
+              <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                🎯 실력 점수 *
+              </label>
               <Input
                 type="number"
-                placeholder="1-10 사이의 점수"
+                placeholder="0-28 사이의 점수"
                 value={skill}
                 onChange={(e) => setSkill(Number(e.target.value) || '')}
-                className="h-12 text-lg"
-                min="1"
-                max="10"
+                className="h-14 text-lg border-2 border-emerald-200/50 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100/50 transition-all duration-300 bg-white/90 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-md focus:shadow-lg"
+                min="0"
+                max="28"
                 disabled={isLoading}
               />
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.8 }}
             >
               <Button
                 onClick={handleCheckIn}
-                className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
-                disabled={isLoading || !name.trim()}
+                className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-[1.02] transform-gpu flex items-center gap-2 disabled:hover:scale-100 rounded-xl"
+                disabled={isLoading || !name.trim() || !phone.trim() || skill === ''}
               >
                 {isLoading ? (
                   <>

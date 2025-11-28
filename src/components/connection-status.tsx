@@ -29,7 +29,7 @@ export function ConnectionStatus({ className = '' }: ConnectionStatusProps) {
   }, []);
 
   useEffect(() => {
-    // Monitor Firebase connectivity with a more reliable method
+    // Monitor Firebase connectivity with a simple check
     const testConnection = async () => {
       if (!db) {
         console.log('🔌 No Firebase instance available');
@@ -38,13 +38,12 @@ export function ConnectionStatus({ className = '' }: ConnectionStatusProps) {
       }
 
       try {
-        // Try to access a test document to verify connection
-        const testDoc = await db.app.firestore().collection('test').doc('connection').get();
-        // We don't care if the document exists, just that we can access Firestore
-        console.log('✅ Firebase connection test successful');
+        // Simple connectivity check - just verify Firebase is initialized
+        // We'll rely on actual operations to test real connectivity
+        console.log('✅ Firebase initialized and available');
         setIsFirebaseConnected(true);
       } catch (error) {
-        console.warn('❌ Firebase connection test failed:', error);
+        console.warn('❌ Firebase connection check failed:', error);
         setIsFirebaseConnected(false);
       }
     };
