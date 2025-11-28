@@ -317,17 +317,23 @@ const EventPage = () => {
             doc(db!, 'participants', eventId), 
             (doc) => {
               if (doc.exists()) {
-                setParticipants(doc.data()?.list || []);
+                const participantsData = doc.data()?.list || [];
+                console.log('📡 Real-time participants update from Firebase:', participantsData.length, 'participants');
+                setParticipants(participantsData);
                 // Backup to localStorage
-                localStorage.setItem(`participants_${eventId}`, JSON.stringify(doc.data()?.list || []));
+                localStorage.setItem(`participants_${eventId}`, JSON.stringify(participantsData));
+              } else {
+                console.log('📡 No participants document found in Firebase');
               }
             },
             (error) => {
-              console.warn('Participants listener error:', error);
+              console.warn('❌ Participants listener error:', error);
               // Fallback to localStorage
               const fallbackData = localStorage.getItem(`participants_${eventId}`);
               if (fallbackData) {
-                setParticipants(JSON.parse(fallbackData));
+                const participantsData = JSON.parse(fallbackData);
+                console.log('📱 Loaded participants from localStorage fallback:', participantsData.length);
+                setParticipants(participantsData);
               }
             }
           );

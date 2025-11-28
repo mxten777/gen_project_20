@@ -32,23 +32,25 @@ export function ConnectionStatus({ className = '' }: ConnectionStatusProps) {
     // Monitor Firebase connectivity with a more reliable method
     const testConnection = async () => {
       if (!db) {
+        console.log('🔌 No Firebase instance available');
         setIsFirebaseConnected(false);
         return;
       }
 
       try {
-        // Just try to access the Firebase instance without creating listeners
-        if (db.app) {
-          setIsFirebaseConnected(true);
-        }
+        // Try to access a test document to verify connection
+        const testDoc = await db.app.firestore().collection('test').doc('connection').get();
+        // We don't care if the document exists, just that we can access Firestore
+        console.log('✅ Firebase connection test successful');
+        setIsFirebaseConnected(true);
       } catch (error) {
-        console.warn('Firebase connection test failed:', error);
+        console.warn('❌ Firebase connection test failed:', error);
         setIsFirebaseConnected(false);
       }
     };
 
     // Initial test with slight delay
-    const initialTimer = setTimeout(testConnection, 100);
+    const initialTimer = setTimeout(testConnection, 500);
     
     // Periodic check every 30 seconds
     const interval = setInterval(testConnection, 30000);

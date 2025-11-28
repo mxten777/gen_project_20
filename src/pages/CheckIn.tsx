@@ -93,13 +93,15 @@ const CheckIn = () => {
   }, [scanning, toast, eventId]);
 
   const handleCheckIn = async () => {
-    alert(`체크인 시도: 이름=${name}, 이벤트ID=${eventId}`);
-    
     console.log('handleCheckIn called', { name, eventId, phone, skill });
     
     if (!name || !eventId) {
-      alert('이름이나 이벤트 ID가 없습니다.');
       console.log('Missing name or eventId');
+      toast({
+        title: '입력 오류',
+        description: '이름을 입력해주세요.',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -113,21 +115,23 @@ const CheckIn = () => {
         if (participantsDoc.exists()) {
           participants = participantsDoc.data()?.list || [];
         }
+        console.log('Loaded existing participants from Firebase:', participants.length);
       } catch (error) {
         console.error('Firebase load failed:', error);
         // Fallback to localStorage
         const participantsData = localStorage.getItem(`participants_${eventId}`);
         participants = participantsData ? JSON.parse(participantsData) : [];
+        console.log('Loaded participants from localStorage:', participants.length);
       }
     } else {
       const participantsData = localStorage.getItem(`participants_${eventId}`);
       participants = participantsData ? JSON.parse(participantsData) : [];
+      console.log('Loaded participants from localStorage (no Firebase):', participants.length);
     }
     
     console.log('Current participants:', participants);
     
     if (participants.some((p: Participant) => p.name === name)) {
-      alert('중복 참가자입니다.');
       console.log('Duplicate participant');
       toast({
         title: '중복 체크인',
@@ -146,22 +150,33 @@ const CheckIn = () => {
     };
 
     participants.push(newParticipant);
+    console.log('Added new participant:', newParticipant);
 
     // Save to Firebase or localStorage
     if (db) {
       try {
         await setDoc(doc(db, 'participants', eventId), { list: participants });
-        console.log('Saved to Firebase');
-      } catch (error) {
-        console.error('Firebase save failed, using localStorage:', error);
+        console.log('✅ Saved to Firebase successfully');
+        
+        // Also backup to localStorage
         localStorage.setItem(`participants_${eventId}`, JSON.stringify(participants));
+      } catch (error) {
+        console.error('❌ Firebase save failed, using localStorage:', error);
+        localStorage.setItem(`participants_${eventId}`, JSON.stringify(participants));
+        toast({
+          title: '저장 완료 (오프라인)',
+          description: 'Firebase 연결 실패로 로컬에 저장되었습니다.',
+        });
       }
     } else {
       localStorage.setItem(`participants_${eventId}`, JSON.stringify(participants));
-      console.log('Saved to localStorage');
+      console.log('Saved to localStorage (no Firebase)');
+      toast({
+        title: '저장 완료 (로컬)',
+        description: 'Firebase가 연결되지 않아 로컬에 저장되었습니다.',
+      });
     }
 
-    alert(`${name}님이 체크인되었습니다.`);
     toast({
       title: '체크인 완료',
       description: `${name}님이 체크인되었습니다.`,
@@ -174,7 +189,7 @@ const CheckIn = () => {
       console.error('Check-in failed:', error);
       toast({
         title: '오류 발생',
-        description: '체크인에 실패했습니다.',
+        description: '체크인에 실패했습니다. 다시 시도해주세요.',
         variant: 'destructive',
       });
     } finally {
