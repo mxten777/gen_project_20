@@ -11,8 +11,12 @@ import { useToast } from '@/hooks/use-toast';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 const Home = () => {
-  const [eventName, setEventName] = useState('');
+  const [eventTitle1, setEventTitle1] = useState('');
+  const [eventTitle2, setEventTitle2] = useState('');
   const [eventDate, setEventDate] = useState('');
+  const [eventTime, setEventTime] = useState('');
+  const [eventLocation, setEventLocation] = useState('');
+  const [expectedAttendees, setExpectedAttendees] = useState<number | ''>('');
   const [isLoading, setIsLoading] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const navigate = useNavigate();
@@ -31,10 +35,10 @@ const Home = () => {
   };
 
   const createEvent = async () => {
-    if (!eventName.trim() || !eventDate) {
+    if (!eventTitle1.trim() || !eventDate || !eventLocation.trim()) {
       toast({
         title: '입력 오류',
-        description: '이벤트 이름과 날짜를 모두 입력해주세요.',
+        description: '필수 항목(제목1, 날짜, 장소)을 모두 입력해주세요.',
         variant: 'destructive',
       });
       return;
@@ -46,8 +50,13 @@ const Home = () => {
       const eventId = `event_${Date.now()}`;
       const eventData = {
         id: eventId,
-        name: eventName.trim(),
+        title1: eventTitle1.trim(),
+        title2: eventTitle2.trim(),
         date: eventDate,
+        timeFrom: eventTime,
+        timeTo: '', // 빈 값으로 설정
+        location: eventLocation.trim(),
+        expectedAttendees: Number(expectedAttendees) || 0,
         createdAt: new Date(),
       };
 
@@ -134,12 +143,31 @@ const Home = () => {
             >
               <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                 <Plus className="h-4 w-4" />
-                이벤트 이름
+                이벤트 제목1 <span className="text-red-500">*</span>
               </label>
               <Input
-                placeholder="예: 테니스 동호회 모임"
-                value={eventName}
-                onChange={(e) => setEventName(e.target.value)}
+                placeholder="예: 삼광초등학교"
+                value={eventTitle1}
+                onChange={(e) => setEventTitle1(e.target.value)}
+                className="h-12 text-lg"
+                disabled={isLoading}
+              />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.35 }}
+              className="space-y-2"
+            >
+              <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                이벤트 제목2
+              </label>
+              <Input
+                placeholder="예: 송년모임"
+                value={eventTitle2}
+                onChange={(e) => setEventTitle2(e.target.value)}
                 className="h-12 text-lg"
                 disabled={isLoading}
               />
@@ -153,7 +181,7 @@ const Home = () => {
             >
               <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
-                이벤트 날짜
+                이벤트 날짜 <span className="text-red-500">*</span>
               </label>
               <Input
                 type="date"
@@ -163,16 +191,72 @@ const Home = () => {
                 disabled={isLoading}
               />
             </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.45 }}
+              className="space-y-2"
+            >
+              <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                🕐 이벤트 시간
+              </label>
+              <Input
+                placeholder="예: 오후 2시, 2시 30분"
+                value={eventTime}
+                onChange={(e) => setEventTime(e.target.value)}
+                className="h-12 text-lg"
+                disabled={isLoading}
+              />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5 }}
+              className="space-y-2"
+            >
+              <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                📍 장소 <span className="text-red-500">*</span>
+              </label>
+              <Input
+                placeholder="예: 삼광초등학교 강당"
+                value={eventLocation}
+                onChange={(e) => setEventLocation(e.target.value)}
+                className="h-12 text-lg"
+                disabled={isLoading}
+              />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.55 }}
+              className="space-y-2"
+            >
+              <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                👥 참석 예정 인원
+              </label>
+              <Input
+                type="number"
+                placeholder="예: 50"
+                value={expectedAttendees}
+                onChange={(e) => setExpectedAttendees(e.target.value ? Number(e.target.value) : '')}
+                className="h-12 text-lg"
+                min="1"
+                disabled={isLoading}
+              />
+            </motion.div>
             
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
+              transition={{ delay: 0.55 }}
             >
               <Button 
                 onClick={createEvent} 
                 className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 transition-all duration-200 shadow-lg hover:shadow-xl"
-                disabled={isLoading || !eventName.trim() || !eventDate}
+                disabled={isLoading || !eventTitle1.trim() || !eventDate || !eventLocation.trim()}
               >
                 {isLoading ? (
                   <>

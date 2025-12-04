@@ -1,10 +1,6 @@
 import { cn } from "@/lib/utils"
 
-interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
-  // Extends React.HTMLAttributes for standard div props
-}
-
-function Skeleton({ className, ...props }: SkeletonProps) {
+function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={cn(
@@ -16,7 +12,7 @@ function Skeleton({ className, ...props }: SkeletonProps) {
   )
 }
 
-function SkeletonCard({ className, ...props }: SkeletonProps) {
+function SkeletonCard({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div className={cn("rounded-xl border bg-card p-6 shadow-md", className)} {...props}>
       <div className="space-y-4">
@@ -32,7 +28,7 @@ function SkeletonCard({ className, ...props }: SkeletonProps) {
   )
 }
 
-function SkeletonParticipant({ className, ...props }: SkeletonProps) {
+function SkeletonParticipant({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div className={cn("bg-gradient-to-br from-white to-gray-50 rounded-xl p-4 shadow-md border border-gray-100", className)} {...props}>
       <div className="flex items-center gap-3 mb-2">
@@ -50,7 +46,7 @@ function SkeletonParticipant({ className, ...props }: SkeletonProps) {
   )
 }
 
-function SkeletonTeam({ className, ...props }: SkeletonProps) {
+function SkeletonTeam({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div className={cn("bg-gradient-to-br rounded-xl p-6 shadow-md", className)} {...props}>
       <div className="flex items-center gap-3 mb-4">

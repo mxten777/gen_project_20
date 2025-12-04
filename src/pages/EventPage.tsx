@@ -9,16 +9,21 @@ import QRCode from 'qrcode';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/firebase';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
-import { Users, Settings, Shield, Trophy, Download, Share2, Image } from 'lucide-react';
+import { Users, Settings, Shield, Trophy, Download, Share2, Image, Calendar, Clock, MapPin, Target, CheckCircle } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { SkeletonParticipant } from '@/components/skeleton';
 import { TeamAssignmentSuccess } from '@/components/animated-feedback';
 import { ConnectionStatus, ConnectionIndicator } from '@/components/connection-status';
 
 interface Event {
-  name: string;
+  id: string;
+  title1: string;
+  title2: string;
   date: string;
+  timeFrom: string;
+  timeTo: string;
+  expectedAttendees: number;
   createdAt: Date;
+  location?: string;
 }
 
 interface Participant {
@@ -37,6 +42,7 @@ interface Team {
   color: string;
   members: Participant[];
   updatedAt: Date;
+  totalSkill?: number;
 }
 
 const EventPage = () => {
@@ -59,8 +65,8 @@ const EventPage = () => {
   const generateInvitation = useCallback(async () => {
     console.log('Generating invitation...', { event, qrUrl });
     
-    if (!event || !qrUrl) {
-      console.log('Missing event or qrUrl');
+    if (!event) {
+      console.log('Missing event, skipping invitation generation');
       return;
     }
 
@@ -72,48 +78,75 @@ const EventPage = () => {
         return;
       }
 
-      // Set canvas size for high quality
-      canvas.width = 800;
-      canvas.height = 1200;
+      // Set canvas size for compact display
+      canvas.width = 600;
+      canvas.height = 800;
 
-      // Create gradient background
-      const gradient = ctx.createLinearGradient(0, 0, 800, 1200);
-      gradient.addColorStop(0, '#667eea');
-      gradient.addColorStop(0.5, '#764ba2');
-      gradient.addColorStop(1, '#f093fb');
-
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, 800, 1200);
+      // Create gradient background with beautiful two-tone colors
+        const gradient = ctx.createLinearGradient(0, 0, 600, 800);
+        gradient.addColorStop(0, '#3b82f6');    // Blue
+        gradient.addColorStop(0.25, '#8b5cf6'); // Purple
+        gradient.addColorStop(0.5, '#f472b6');  // Rose
+        gradient.addColorStop(0.75, '#fbbf24'); // Amber
+        gradient.addColorStop(1, '#f59e0b');    // Yellow      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, 600, 800);
 
       // Add decorative elements
       ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-      ctx.fillRect(50, 50, 700, 1100);
+      ctx.fillRect(30, 30, 540, 740);
 
       // Title
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 48px Arial';
+      ctx.font = 'bold 56px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText('🎉 이벤트 초대장 🎉', 400, 150);
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+      ctx.shadowBlur = 4;
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
+      ctx.fillText('🎉 이벤트 초대장 🎉', 300, 120);
 
-      // Event name
+      // Event title1 (main title)
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 48px Arial';
+      ctx.fillText(event.title1, 300, 180);
+
+      // Event title2 (subtitle)
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 36px Arial';
-      ctx.fillText(event.name, 400, 220);
+      ctx.fillText(event.title2, 300, 220);
 
-      // Event date
+      // Event date and time
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '28px Arial';
+      const dateStr = (() => {
+        try {
+          const date = new Date(event.date);
+          return isNaN(date.getTime()) ? '날짜 정보 없음' : date.toLocaleDateString('ko-KR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            weekday: 'long'
+          });
+        } catch {
+          return '날짜 정보 없음';
+        }
+      })();
+      ctx.fillText(`${dateStr} ${event.timeFrom}`, 300, 270);
+
+      // Location
       ctx.fillStyle = '#ffffff';
       ctx.font = '24px Arial';
-      ctx.fillText(new Date(event.date).toLocaleDateString('ko-KR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        weekday: 'long'
-      }), 400, 270);
+      ctx.fillText(`장소: ${event.location || '장소 정보 없음'}`, 300, 310);
+
+      // Expected attendees
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '22px Arial';
+      ctx.fillText(`참석 예정 인원: ${event.expectedAttendees}명`, 300, 340);
 
       // Description
       ctx.fillStyle = '#ffffff';
-      ctx.font = '20px Arial';
-      ctx.fillText('참여를 원하시면 아래 QR 코드를 스캔하세요!', 400, 330);
+      ctx.font = '22px Arial';
+      ctx.fillText('참여를 원하시면 아래 QR 코드를 스캔하세요!', 300, 380);
 
       // Generate QR Code directly on canvas with better error handling
       console.log('Generating QR code on canvas...');
@@ -130,28 +163,29 @@ const EventPage = () => {
         });
 
         // Draw QR code on main canvas
-        ctx.drawImage(qrCanvas, 250, 380, 300, 300);
+        ctx.drawImage(qrCanvas, 200, 420, 200, 200);
         console.log('✅ QR code drawn on canvas successfully');
       } catch (qrError) {
         console.error('❌ QR generation on canvas failed:', qrError);
         // Draw placeholder text instead
         ctx.fillStyle = '#ffffff';
-        ctx.font = '16px Arial';
+        ctx.font = '14px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('QR 코드 생성 실패', 400, 530);
-        ctx.fillText(`직접 접속: ${window.location.origin}/checkin/${eventId}`, 400, 550);
+        ctx.fillText('QR 코드 생성 실패', 300, 520);
+        ctx.fillText(`직접 접속: ${window.location.origin}/checkin/${eventId}`, 300, 540);
+        ctx.fillText('모바일 브라우저에서 위 주소로 접속하세요', 300, 560);
       }
 
       // Instructions
       ctx.fillStyle = '#ffffff';
-      ctx.font = '18px Arial';
-      ctx.fillText('📱 모바일로 QR 코드를 스캔하여', 400, 720);
-      ctx.fillText('체크인하세요!', 400, 750);
+      ctx.font = '20px Arial';
+      ctx.fillText('📱 모바일로 QR 코드를 스캔하여', 300, 650);
+      ctx.fillText('체크인하세요!', 300, 680);
 
       // Footer
       ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
       ctx.font = '16px Arial';
-      ctx.fillText('Powered by QR Check-in System', 400, 850);
+      ctx.fillText('Powered by QR Check-in System', 300, 750);
 
       // Convert to image
       const imageData = canvas.toDataURL('image/png', 0.9);
@@ -165,32 +199,50 @@ const EventPage = () => {
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        canvas.width = 800;
-        canvas.height = 1200;
+        canvas.width = 600;
+        canvas.height = 800;
 
-        const gradient = ctx.createLinearGradient(0, 0, 800, 1200);
-        gradient.addColorStop(0, '#667eea');
-        gradient.addColorStop(0.5, '#764ba2');
-        gradient.addColorStop(1, '#f093fb');
+        const gradient = ctx.createLinearGradient(0, 0, 600, 800);
+        gradient.addColorStop(0, '#3b82f6');    // Blue
+        gradient.addColorStop(0.25, '#8b5cf6'); // Purple
+        gradient.addColorStop(0.5, '#f472b6');  // Rose
+        gradient.addColorStop(0.75, '#fbbf24'); // Amber
+        gradient.addColorStop(1, '#f59e0b');    // Yellow
 
         ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, 800, 1200);
+        ctx.fillRect(0, 0, 600, 800);
+
+        // Add semi-transparent overlay for better text readability
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.fillRect(0, 0, 600, 800);
+
+        // Add semi-transparent overlay for better text readability
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.fillRect(0, 0, 600, 800);
 
         ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-        ctx.fillRect(50, 50, 700, 1100);
+        ctx.fillRect(30, 30, 540, 740);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 56px Arial';
+        ctx.textAlign = 'center';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 4;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 2;
+        ctx.fillText('🎉 이벤트 초대장 🎉', 300, 100);
 
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 48px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('🎉 이벤트 초대장 🎉', 400, 150);
+        ctx.fillText(event.title1, 300, 140);
 
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 36px Arial';
-        ctx.fillText(event.name, 400, 220);
+        ctx.fillText(event.title2, 300, 170);
 
         ctx.fillStyle = '#ffffff';
-        ctx.font = '24px Arial';
-        ctx.fillText((() => {
+        ctx.font = '28px Arial';
+        const fallbackDateStr = (() => {
           try {
             const date = new Date(event.date);
             return isNaN(date.getTime()) ? '날짜 정보 없음' : date.toLocaleDateString('ko-KR', {
@@ -202,15 +254,24 @@ const EventPage = () => {
           } catch {
             return '날짜 정보 없음';
           }
-        })(), 400, 270);
+        })();
+        ctx.fillText(`${fallbackDateStr} ${event.timeFrom}`, 300, 200);
 
         ctx.fillStyle = '#ffffff';
-        ctx.font = '20px Arial';
-        ctx.fillText('QR 코드 생성 실패 - 수동 체크인 필요', 400, 530);
+        ctx.font = '24px Arial';
+        ctx.fillText(`장소: ${event.location || '장소 정보 없음'}`, 300, 230);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '24px Arial';
+        ctx.fillText(`참석 예정 인원: ${event.expectedAttendees}명`, 300, 260);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '24px Arial';
+        ctx.fillText('QR 코드 생성 실패 - 수동 체크인 필요', 300, 400);
 
         ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-        ctx.font = '16px Arial';
-        ctx.fillText('Powered by QR Check-in System', 400, 850);
+        ctx.font = '18px Arial';
+        ctx.fillText('Powered by QR Check-in System', 300, 600);
 
         const imageData = canvas.toDataURL('image/png', 0.9);
         setInvitationImage(imageData);
@@ -218,15 +279,15 @@ const EventPage = () => {
         console.error('Fallback invitation generation also failed:', fallbackError);
       }
     }
-  }, [event, qrUrl, eventId]);
+  }, [event, eventId, qrUrl]);
 
   // Share invitation
   const shareInvitation = async () => {
-    if (!invitationImage) return;
+    if (!invitationImage || !event) return;
 
     const shareData = {
-      title: `${event?.name} - 이벤트 초대장`,
-      text: `${event?.name} 이벤트에 초대합니다! QR 코드를 스캔하여 참여하세요.`,
+      title: `${event.title1} ${event.title2} - 이벤트 초대장`,
+      text: `${event.title1} ${event.title2} 이벤트에 초대합니다! QR 코드를 스캔하여 참여하세요.`,
       url: window.location.href,
     };
 
@@ -254,10 +315,10 @@ const EventPage = () => {
 
   // Download invitation image
   const downloadInvitation = () => {
-    if (!invitationImage) return;
+    if (!invitationImage || !event) return;
 
     const link = document.createElement('a');
-    link.download = `${event?.name}_초대장.png`;
+    link.download = `${event.title1}_${event.title2}_초대장.png`;
     link.href = invitationImage;
     link.click();
 
@@ -269,17 +330,17 @@ const EventPage = () => {
 
   // Generate invitation on mount
   useEffect(() => {
-    if (event && qrUrl && !invitationImage) {
+    if (event && !invitationImage) {
+      console.log('Starting invitation generation...');
       // Use requestAnimationFrame to avoid synchronous state update
-      let animationFrame: number;
-      animationFrame = requestAnimationFrame(() => {
+      const animationFrame = requestAnimationFrame(() => {
         generateInvitation().catch(err => {
           console.error('Invitation generation failed:', err);
         });
       });
       return () => cancelAnimationFrame(animationFrame);
     }
-  }, [event, qrUrl, invitationImage, generateInvitation]);
+  }, [event, invitationImage, generateInvitation]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -448,8 +509,9 @@ const EventPage = () => {
     if (!eventId) return;
     
     const generateQR = async () => {
-      const url = `${window.location.origin}/checkin/${eventId}`;
       try {
+        console.log('Generating QR code for event...');
+        const url = `${window.location.origin}/checkin/${eventId}`;
         const qrDataUrl = await QRCode.toDataURL(url, {
           width: 300,
           margin: 2,
@@ -460,7 +522,7 @@ const EventPage = () => {
           errorCorrectionLevel: 'M'
         });
         setQrUrl(qrDataUrl);
-        console.log('✅ QR code generated successfully');
+        console.log('✅ QR code generated successfully for event');
       } catch (error) {
         console.error('❌ QR Code generation failed:', error);
         // Set a placeholder QR URL to prevent blocking
@@ -495,7 +557,7 @@ const EventPage = () => {
       totalSkill: 0,
     }));
 
-    let allParticipants = [...participants];
+    const allParticipants = [...participants];
 
     // 1단계: 인원 수 기반 기본 배정
     const totalParticipants = allParticipants.length;
@@ -709,7 +771,7 @@ const EventPage = () => {
 
   // Export teams to CSV
   const exportToCSV = () => {
-    if (teams.length === 0) {
+    if (teams.length === 0 || !event) {
       toast({
         title: '내보내기 실패',
         description: '배정된 팀이 없습니다.',
@@ -745,7 +807,7 @@ const EventPage = () => {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `${event?.name}_팀배정결과.csv`);
+    link.setAttribute('download', `${event.title1}_${event.title2}_팀배정결과.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -759,12 +821,13 @@ const EventPage = () => {
 
   // Share to KakaoTalk
   const shareToKakaoTalk = () => {
+    if (!event) return;
     const shareUrl = window.location.href;
-    const shareText = `${event?.name} 이벤트 팀 배정 결과가 나왔어요!\n\n${shareUrl}`;
+    const shareText = `${event.title1} ${event.title2} 이벤트 팀 배정 결과가 나왔어요!\n\n${shareUrl}`;
 
     if (navigator.share && navigator.canShare({ url: shareUrl, text: shareText })) {
       navigator.share({
-        title: `${event?.name} - 팀 배정 결과`,
+        title: `${event.title1} ${event.title2} - 팀 배정 결과`,
         text: shareText,
         url: shareUrl,
       }).catch(() => {
@@ -812,408 +875,630 @@ const EventPage = () => {
   );
 
   return (
-    <div className="h-screen w-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4 relative" style={{ minHeight: '100vh', height: '100vh' }}>
-      {/* Enhanced Background Pattern */}
-      <div className="absolute inset-0 opacity-15">
-        <div className="absolute top-10 left-10 w-48 h-48 bg-slate-300 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-10 right-10 w-56 h-56 bg-blue-300 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-indigo-300 rounded-full blur-3xl animate-pulse delay-500"></div>
-        <div className="absolute top-20 right-20 w-36 h-36 bg-slate-400 rounded-full blur-2xl animate-bounce"></div>
-        <div className="absolute bottom-20 left-20 w-32 h-32 bg-blue-400 rounded-full blur-2xl animate-bounce delay-700"></div>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 relative overflow-x-hidden">
+      {/* Premium Background */}
+      <div className="absolute inset-0">
+        {/* Main gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 via-purple-600/5 to-indigo-600/5"></div>
+
+        {/* Floating geometric shapes */}
+        <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-br from-purple-400/8 to-indigo-400/8 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-gradient-to-br from-indigo-400/6 to-blue-400/6 rounded-full blur-3xl animate-pulse delay-500"></div>
+
+        {/* Subtle pattern overlay */}
+        <div className="absolute inset-0 opacity-[0.02]">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `radial-gradient(circle at 25% 25%, #3b82f6 2px, transparent 2px),
+                             radial-gradient(circle at 75% 75%, #8b5cf6 1px, transparent 1px)`,
+            backgroundSize: '60px 60px'
+          }}></div>
+        </div>
       </div>
 
-      {/* Enhanced Floating Elements */}
-      <div className="absolute top-1/4 left-1/4 w-3 h-3 bg-slate-400 rounded-full animate-ping"></div>
-      <div className="absolute top-3/4 right-1/4 w-4 h-4 bg-blue-400 rounded-full animate-ping delay-300"></div>
-      <div className="absolute bottom-1/4 left-1/3 w-2 h-2 bg-indigo-400 rounded-full animate-ping delay-500"></div>
-      <div className="absolute top-1/3 right-1/3 w-2.5 h-2.5 bg-slate-500 rounded-full animate-ping delay-800"></div>
-      <div className="absolute bottom-1/3 left-1/4 w-1.5 h-1.5 bg-blue-500 rounded-full animate-ping delay-1200"></div>
-      <div className="h-full flex items-center justify-center">
-        <div className="w-full max-w-6xl mx-auto relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden" style={{ maxHeight: '90vh' }}>
-          <div className="overflow-y-auto p-6" style={{ maxHeight: '90vh' }}>
-        {/* Theme Toggle & Connection Status */}
-        <div className="absolute top-4 right-4 z-10 flex items-center gap-3">
+      {/* Floating accent elements */}
+      <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-blue-400 rounded-full animate-ping opacity-60"></div>
+      <div className="absolute top-3/4 right-1/4 w-3 h-3 bg-purple-400 rounded-full animate-ping delay-300 opacity-60"></div>
+      <div className="absolute bottom-1/4 left-1/3 w-1.5 h-1.5 bg-indigo-400 rounded-full animate-ping delay-500 opacity-60"></div>
+      {/* Main Content Container */}
+      <div className="relative z-10 container mx-auto px-4 py-6 md:px-4 md:py-8 max-w-7xl">
+        {/* Premium Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="text-center mb-12"
+        >
+          {/* Hero Section with Glass Effect */}
+          <div className="relative mb-8">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-indigo-600/10 rounded-3xl blur-xl"></div>
+            <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl p-4 md:p-6 shadow-2xl border border-white/20">
+              <motion.div
+                initial={{ scale: 0.9 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2, duration: 0.6 }}
+                className="flex items-center justify-center gap-4 mb-6"
+              >
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur-lg opacity-50"></div>
+                  <div className="relative p-4 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl shadow-xl">
+                    <Trophy className="h-12 w-12 text-white" />
+                  </div>
+                </div>
+                <div className="text-left">
+                  <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+                    {event.title1}
+                  </h1>
+                  <h2 className="text-xl md:text-3xl font-semibold text-gray-700 mb-3">
+                    {event.title2}
+                  </h2>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 text-gray-600">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-5 w-5 text-blue-500 flex-shrink-0" />
+                      <span className="font-medium text-sm sm:text-base">
+                        {(() => {
+                          try {
+                            const date = new Date(event.date);
+                            return isNaN(date.getTime()) ? '날짜 정보 없음' : date.toLocaleDateString('ko-KR', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                              weekday: 'long'
+                            });
+                          } catch {
+                            return '날짜 정보 없음';
+                          }
+                        })()}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-5 w-5 text-purple-500 flex-shrink-0" />
+                      <span className="font-medium text-sm sm:text-base">{event.timeFrom}</span>
+                    </div>
+                    {event.location && (
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-5 w-5 text-indigo-500 flex-shrink-0" />
+                        <span className="font-medium text-sm sm:text-base">{event.location}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Stats Cards */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.6 }}
+                className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6"
+              >
+                <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200/50">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-500 rounded-lg">
+                      <Users className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-blue-600 font-medium">참가 현황</p>
+                      <p className="text-2xl font-bold text-blue-700">{participants.length}/{event.expectedAttendees}명</p>
+                    </div>
+                  </div>
+                </div>
+                {teams.length > 0 && (
+                  <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200/50">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-purple-500 rounded-lg">
+                        <Trophy className="h-6 w-6 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-purple-600 font-medium">팀 배정</p>
+                        <p className="text-2xl font-bold text-purple-700">{teams.length}팀</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div className="bg-gradient-to-r from-indigo-50 to-indigo-100 rounded-xl p-4 border border-indigo-200/50">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-indigo-500 rounded-lg">
+                      <CheckCircle className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-indigo-600 font-medium">진행 상태</p>
+                      <p className="text-2xl font-bold text-indigo-700">활성</p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Top Controls */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.6 }}
+          className="flex flex-col sm:flex-row justify-end items-center gap-3 sm:gap-4 mb-6 md:mb-8"
+        >
           <ConnectionIndicator />
           <ThemeToggle />
-        </div>
-        
-        {/* Connection Status Notifications */}
-        <ConnectionStatus />
+        </motion.div>
 
-        {/* Team Assignment Success Animation */}
+        {/* Connection Status & Success Animation */}
+        <ConnectionStatus />
         <TeamAssignmentSuccess
           isVisible={showTeamSuccess}
           teamCount={assignedTeamCount}
           onComplete={() => setShowTeamSuccess(false)}
         />
 
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8 pt-6"
-        >
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
-              <Trophy className="h-8 w-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                {event.name}
-              </h1>
-              <p className="text-gray-600 mt-1">
-                {(() => {
-                  try {
-                    const date = new Date(event.date);
-                    return isNaN(date.getTime()) ? '날짜 정보 없음' : date.toLocaleDateString('ko-KR');
-                  } catch {
-                    return '날짜 정보 없음';
-                  }
-                })()}
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex items-center justify-center gap-6 text-gray-600">
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              <span className="font-semibold">{participants.length}명 참가</span>
-            </div>
-            {teams.length > 0 && (
-              <div className="flex items-center gap-2">
-                <Trophy className="h-5 w-5" />
-                <span className="font-semibold">{teams.length}팀 배정됨</span>
-              </div>
-            )}
-          </div>
-        </motion.div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Premium Invitation Card */}
+        {/* Main Content Grid */}
+        <div className="space-y-8">
+          {/* Featured Invitation Section */}
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <Card variant="glass" className="shadow-2xl border-0 bg-white/95 backdrop-blur-xl relative overflow-hidden rounded-3xl hover:shadow-3xl transition-all duration-500">
-              <CardHeader className="pb-6">
-                <CardTitle className="flex items-center gap-3 text-2xl font-bold">
-                  <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl shadow-lg">
-                    <Image className="h-6 w-6 text-white" />
-                  </div>
-                  프리미엄 초대장
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {invitationImage ? (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 200 }}
-                    className="flex justify-center"
-                  >
-                    <div className="relative">
-                      <img src={invitationImage} alt="Premium Invitation" className="w-full max-w-sm rounded-xl shadow-lg" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-xl"></div>
-                    </div>
-                  </motion.div>
-                ) : (
-                  <div className="flex justify-center py-8">
-                    <div className="w-48 h-64 bg-gradient-to-br from-purple-100 to-blue-100 rounded-xl flex items-center justify-center">
-                      <div className="text-center">
-                        <Image className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                        <p className="text-sm text-gray-500">초대장 생성 중...</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={shareInvitation}
-                    className="flex-1 flex items-center gap-2"
-                  >
-                    <Share2 className="h-4 w-4" />
-                    공유하기
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={downloadInvitation}
-                    className="flex-1 flex items-center gap-2"
-                  >
-                    <Download className="h-4 w-4" />
-                    다운로드
-                  </Button>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-gray-500">
-                    아름다운 초대장을 팀원들에게 공유하세요!
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Team Assignment Card */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Card variant="glass" className="shadow-2xl border-0 bg-white/95 backdrop-blur-xl relative overflow-hidden rounded-3xl hover:shadow-3xl transition-all duration-500">
-              <CardHeader className="pb-6">
-                <CardTitle className="flex items-center gap-3 text-2xl font-bold">
-                  <div className="p-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl shadow-lg">
-                    <Settings className="h-6 w-6 text-white" />
-                  </div>
-                  팀 배정 관리
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {!isAdmin ? (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="space-y-3"
-                  >
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Shield className="h-4 w-4" />
-                      관리자 인증 필요
-                    </div>
-                    <Input
-                      placeholder="관리자 토큰"
-                      value={adminToken}
-                      onChange={(e) => setAdminToken(e.target.value)}
-                      type="password"
-                      className="h-10"
-                    />
-                    <Button onClick={checkAdmin} variant="outline" className="w-full flex items-center gap-2">
-                      <Shield className="h-4 w-4" />
-                      관리자 모드 활성화
-                    </Button>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="space-y-4"
-                  >
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label className="text-sm font-medium text-gray-700">팀 수</label>
-                        <select
-                          value={numTeams}
-                          onChange={(e) => setNumTeams(Number(e.target.value))}
-                          className="w-full h-10 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          {[2, 3, 4, 5, 6].map((n) => (
-                            <option key={n} value={n}>{n}팀</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-sm font-medium text-gray-700">배정 방식</label>
-                        <select
-                          value={balanceType}
-                          onChange={(e) => setBalanceType(e.target.value as 'balanced' | 'random' | 'mixed')}
-                          className="w-full h-10 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="balanced">균형 배정</option>
-                          <option value="random">랜덤 배정</option>
-                          <option value="mixed">혼합 배정</option>
-                        </select>
-                      </div>
-                    </div>
-                    <Button 
-                      onClick={assignTeams} 
-                      className="w-full h-14 text-lg font-bold bg-gradient-to-r from-purple-500 via-blue-500 to-indigo-500 hover:from-purple-600 hover:via-blue-600 hover:to-indigo-600 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-[1.02] transform-gpu flex items-center gap-3 disabled:hover:scale-100 rounded-2xl"
-                      disabled={participants.length === 0}
-                    >
-                      <Trophy className="h-6 w-6" />
-                      팀 배정 실행 {participants.length === 0 && '(참가자 없음)'}
-                    </Button>
-                  </motion.div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
-
-        {/* Participants List */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <Card variant="glass" className="shadow-2xl border-0 bg-white/95 backdrop-blur-xl relative overflow-hidden rounded-3xl">
-            <CardHeader className="pb-6">
-              <CardTitle className="flex items-center gap-3 text-2xl font-bold">
-                <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl shadow-lg">
-                  <Users className="h-6 w-6 text-white" />
-                </div>
-                참가자 목록
-                <span className="ml-auto text-lg font-normal text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                  {participants.length}명
-                </span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoadingParticipants && participants.length === 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {Array.from({ length: 6 }).map((_, index) => (
-                    <SkeletonParticipant key={index} />
-                  ))}
-                </div>
-              ) : participants.length === 0 ? (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-center py-12"
-                >
-                  <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500 text-lg mb-2">아직 체크인한 참가자가 없습니다</p>
-                  <p className="text-gray-400 text-sm">
-                    QR 코드를 스캔하거나 수동으로 체크인해주세요
-                  </p>
-                </motion.div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {participants.map((p, index) => (
-                    <motion.div
-                      key={p.id}
-                      initial={{ opacity: 0, y: 50 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true, margin: "-100px" }}
-                      transition={{ duration: 0.6, delay: index * 0.05 }}
-                      className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-4 shadow-md border border-gray-100 hover:shadow-lg transition-shadow duration-200"
-                    >
-
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
-                          {p.name.charAt(0)}
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-gray-800">{p.name}</h3>
-                          <p className="text-xs text-gray-500">
-                            {(() => {
-                              try {
-                                const date = new Date(p.checkinAt);
-                                return isNaN(date.getTime()) ? '시간 정보 없음' : date.toLocaleTimeString('ko-KR', { 
-                                  hour: '2-digit', 
-                                  minute: '2-digit' 
-                                });
-                              } catch {
-                                return '시간 정보 없음';
-                              }
-                            })()}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        {p.skill && (
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <span className="font-medium">실력:</span>
-                            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
-                              {p.skill}
-                            </span>
-                          </div>
-                        )}
-                        {p.teamAssigned && (
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <span className="font-medium">팀:</span>
-                            <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs">
-                              {p.teamAssigned}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Team Results */}
-        {teams.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="mt-8"
+            transition={{ delay: 0.8, duration: 0.8 }}
           >
-            <Card variant="glass" className="shadow-2xl border-0 bg-white/95 backdrop-blur-xl relative overflow-hidden rounded-3xl">
-              <CardHeader className="pb-6">
-                <CardTitle className="flex items-center gap-3 text-2xl font-bold">
-                  <div className="p-2 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl shadow-lg">
-                    <Trophy className="h-6 w-6 text-white" />
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-indigo-600/10 rounded-3xl blur-2xl"></div>
+              <Card className="relative bg-white/95 backdrop-blur-xl border-0 shadow-2xl rounded-3xl overflow-hidden">
+                <CardHeader className="pb-8 bg-gradient-to-r from-blue-50 via-purple-50 to-indigo-50 border-b border-gray-100">
+                  <div className="flex items-center justify-center gap-4">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur-lg opacity-30"></div>
+                      <div className="relative p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl shadow-lg">
+                        <Image className="h-8 w-8 text-white" />
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <CardTitle className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                        프리미엄 초대장
+                      </CardTitle>
+                      <p className="text-gray-600 mt-1">아름다운 디자인으로 특별한 순간을 공유하세요</p>
+                    </div>
                   </div>
-                  팀 배정 결과
-                  <div className="ml-auto flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex items-center gap-2 h-10 px-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 hover:from-green-600 hover:to-emerald-600 rounded-xl shadow-lg"
-                      onClick={shareToKakaoTalk}
+                </CardHeader>
+                <CardContent className="p-8">
+                  {invitationImage ? (
+                    <motion.div
+                      initial={{ scale: 0.95, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 1, duration: 0.6 }}
+                      className="flex justify-center mb-8"
                     >
-                      <Share2 className="h-4 w-4" />
-                      카톡 공유
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex items-center gap-2 h-10 px-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white border-0 hover:from-blue-600 hover:to-purple-600 rounded-xl shadow-lg"
-                      onClick={exportToCSV}
+                      <div className="relative group">
+                        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-indigo-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
+                        <div className="relative rounded-2xl shadow-2xl overflow-hidden group-hover:shadow-3xl transition-all duration-500">
+                          <img src={invitationImage} alt="Premium Invitation" className="w-full max-w-sm md:max-w-lg rounded-2xl" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent rounded-2xl"></div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      initial={{ scale: 0.9 }}
+                      animate={{ scale: 1 }}
+                      className="flex justify-center py-12"
                     >
-                      <Download className="h-4 w-4" />
-                      CSV 내보내기
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-blue-400 rounded-2xl blur-xl opacity-50 animate-pulse"></div>
+                        <div className="relative w-56 h-72 md:w-64 md:h-80 bg-gradient-to-br from-purple-100 to-blue-100 rounded-2xl flex items-center justify-center shadow-xl">
+                          <div className="text-center">
+                            <div className="animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                            <Image className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                            <p className="text-sm text-gray-500 font-medium">초대장 생성 중...</p>
+                            <p className="text-xs text-gray-400 mt-1">잠시만 기다려주세요</p>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 1.2, duration: 0.6 }}
+                    className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center px-4"
+                  >
+                    <Button
+                      onClick={shareInvitation}
+                      className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl py-3 md:py-3 h-12 text-sm md:text-base font-medium"
+                    >
+                      <Share2 className="h-4 w-4 md:h-5 md:w-5 mr-2" />
+                      초대장 공유하기
                     </Button>
+                    <Button
+                      onClick={downloadInvitation}
+                      variant="outline"
+                      className="flex-1 border-2 border-purple-200 hover:border-purple-300 hover:bg-purple-50 text-purple-700 shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl py-3 md:py-3 h-12 text-sm md:text-base font-medium"
+                    >
+                      <Download className="h-4 w-4 md:h-5 md:w-5 mr-2" />
+                      이미지 다운로드
+                    </Button>
+                  </motion.div>
+                </CardContent>
+              </Card>
+            </div>
+          </motion.div>
+
+          {/* Management Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1, duration: 0.8 }}
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+              {/* Team Management Card */}
+              <Card className="bg-white/95 backdrop-blur-xl border-0 shadow-xl rounded-3xl overflow-hidden hover:shadow-2xl transition-all duration-500">
+                <CardHeader className="bg-gradient-to-r from-purple-50 to-blue-50 border-b border-gray-100">
+                  <CardTitle className="flex items-center gap-4 text-2xl font-bold">
+                    <div className="p-3 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl shadow-lg">
+                      <Settings className="h-7 w-7 text-white" />
+                    </div>
+                    <div>
+                      <div className="text-gray-800">팀 배정 관리</div>
+                      <div className="text-sm text-gray-600 font-normal">스마트한 팀 구성으로 완벽한 이벤트</div>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  {!isAdmin ? (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="space-y-4"
+                    >
+                      <div className="text-center py-8">
+                        <Shield className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold text-gray-700 mb-2">관리자 인증 필요</h3>
+                        <p className="text-gray-500 text-sm mb-6">팀 배정을 위해 관리자 권한이 필요합니다</p>
+                      </div>
+                      <div className="space-y-3">
+                        <Input
+                          placeholder="관리자 토큰을 입력하세요"
+                          value={adminToken}
+                          onChange={(e) => setAdminToken(e.target.value)}
+                          type="password"
+                          className="h-12 text-center text-lg rounded-xl border-2 border-gray-200 focus:border-purple-300"
+                        />
+                        <Button
+                          onClick={checkAdmin}
+                          className="w-full h-12 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                        >
+                          <Shield className="h-5 w-5 mr-2" />
+                          관리자 모드 활성화
+                        </Button>
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="space-y-6"
+                    >
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                            <Users className="h-4 w-4" />
+                            팀 수
+                          </label>
+                          <select
+                            value={numTeams}
+                            onChange={(e) => setNumTeams(Number(e.target.value))}
+                            className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-purple-300 text-center font-medium"
+                          >
+                            {[2, 3, 4, 5, 6].map((n) => (
+                              <option key={n} value={n}>{n}팀</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                            <Target className="h-4 w-4" />
+                            배정 방식
+                          </label>
+                          <select
+                            value={balanceType}
+                            onChange={(e) => setBalanceType(e.target.value as 'balanced' | 'random' | 'mixed')}
+                            className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-purple-300 text-center font-medium"
+                          >
+                            <option value="balanced">균형 배정</option>
+                            <option value="random">랜덤 배정</option>
+                            <option value="mixed">혼합 배정</option>
+                          </select>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={assignTeams}
+                        disabled={participants.length === 0}
+                        className="w-full h-12 md:h-16 text-base md:text-xl font-bold bg-gradient-to-r from-purple-500 via-blue-500 to-indigo-500 hover:from-purple-600 hover:via-blue-600 hover:to-indigo-600 text-white shadow-xl hover:shadow-2xl hover:scale-[1.02] transform-gpu transition-all duration-300 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                      >
+                        <Trophy className="h-7 w-7 mr-3" />
+                        팀 배정 실행
+                        {participants.length === 0 && ' (참가자 없음)'}
+                      </Button>
+                    </motion.div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Participants Overview Card */}
+              <Card className="bg-white/95 backdrop-blur-xl border-0 shadow-xl rounded-3xl overflow-hidden hover:shadow-2xl transition-all duration-500">
+                <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 border-b border-gray-100">
+                  <CardTitle className="flex items-center gap-4 text-2xl font-bold">
+                    <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl shadow-lg">
+                      <Users className="h-7 w-7 text-white" />
+                    </div>
+                    <div>
+                      <div className="text-gray-800">참가자 현황</div>
+                      <div className="text-sm text-gray-600 font-normal">실시간 참가자 관리 및 모니터링</div>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+                        <span className="text-white font-bold text-lg">{participants.length}</span>
+                      </div>
+                      <div>
+                        <p className="text-lg font-bold text-gray-800">총 참가자</p>
+                        <p className="text-sm text-gray-600">목표: {event.expectedAttendees}명</p>
+                      </div>
+                    </div>
+                    <div className="text-left sm:text-right">
+                      <div className="text-2xl md:text-3xl font-bold text-green-600">{Math.round((participants.length / event.expectedAttendees) * 100)}%</div>
+                      <div className="text-sm text-gray-600">달성률</div>
+                    </div>
+                  </div>
+
+                  {participants.length > 0 && (
+                    <div className="space-y-3 max-h-64 overflow-y-auto">
+                      {participants.slice(0, 5).map((p, index) => (
+                        <motion.div
+                          key={p.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          className="flex items-center gap-3 p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:shadow-md transition-all duration-200"
+                        >
+                          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
+                            {p.name.charAt(0)}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-semibold text-gray-800">{p.name}</p>
+                            <p className="text-xs text-gray-500">
+                              {(() => {
+                                try {
+                                  const date = new Date(p.checkinAt);
+                                  return isNaN(date.getTime()) ? '시간 정보 없음' : date.toLocaleTimeString('ko-KR', {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  });
+                                } catch {
+                                  return '시간 정보 없음';
+                                }
+                              })()}
+                            </p>
+                          </div>
+                          {p.skill && (
+                            <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                              Lv.{p.skill}
+                            </span>
+                          )}
+                        </motion.div>
+                      ))}
+                      {participants.length > 5 && (
+                        <div className="text-center py-2">
+                          <span className="text-sm text-gray-500">외 {participants.length - 5}명...</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </motion.div>
+
+          {/* Participants List Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.2, duration: 0.8 }}
+          >
+            <Card className="bg-white/95 backdrop-blur-xl border-0 shadow-2xl rounded-3xl overflow-hidden hover:shadow-3xl transition-all duration-500">
+              <CardHeader className="bg-gradient-to-r from-emerald-50 via-green-50 to-teal-50 border-b border-gray-100">
+                <CardTitle className="flex items-center gap-3 sm:gap-4 text-2xl sm:text-3xl font-bold">
+                  <div className="p-2 sm:p-3 bg-gradient-to-r from-emerald-500 to-green-500 rounded-xl shadow-lg">
+                    <Users className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-gray-800 text-xl sm:text-2xl md:text-3xl font-bold">참가자 목록</div>
+                    <div className="text-xs sm:text-sm text-gray-600 font-normal">참가자들의 실시간 체크인 현황</div>
+                  </div>
+                  <div className="ml-auto">
+                    <span className="bg-gradient-to-r from-emerald-500 to-green-500 text-white px-2 py-1 sm:px-3 sm:py-1 md:px-4 md:py-2 rounded-full text-xs sm:text-sm md:text-base lg:text-lg font-bold shadow-lg">
+                      {participants.length}명
+                    </span>
                   </div>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {teams.map((team, index) => (
-                    <motion.div
-                      key={team.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true, margin: "-50px" }}
-                      transition={{ duration: 0.6, delay: index * 0.1 }}
-                      className={`bg-gradient-to-br ${getTeamColor(team.color)} border border-opacity-20 rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-200`}
-                    >
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className={`w-12 h-12 ${getTeamColor(team.color)} rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md`}>
-                          {team.name.split(' ')[1]}
+              <CardContent className="p-4 sm:p-6 md:p-8">
+                {isLoadingParticipants && participants.length === 0 ? (
+                  <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
+                    {Array.from({ length: 8 }).map((_, index) => (
+                      <div key={index} className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg sm:rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-5 lg:p-6 animate-pulse">
+                        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 mb-2 sm:mb-3 md:mb-4">
+                          <div className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 bg-gray-300 rounded-full"></div>
+                          <div className="flex-1">
+                            <div className="h-3 sm:h-4 bg-gray-300 rounded mb-1 sm:mb-2"></div>
+                            <div className="h-2 sm:h-3 bg-gray-300 rounded w-3/4"></div>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="font-bold text-lg text-gray-800">{team.name}</h3>
-                          <p className="text-sm text-gray-600">{team.members.length}명</p>
+                        <div className="flex gap-1 sm:gap-2">
+                          <div className="h-4 sm:h-5 md:h-6 bg-gray-300 rounded-full flex-1"></div>
+                          <div className="h-4 sm:h-5 md:h-6 bg-gray-300 rounded-full w-12 sm:w-16 md:w-20"></div>
                         </div>
                       </div>
-                      <ul className="space-y-2">
-                        {team.members.map((member) => (
-                          <li key={member.id} className="flex items-center justify-between bg-white/50 rounded-lg p-2">
-                            <span className="font-medium text-gray-800">{member.name}</span>
-                            {member.skill && (
-                              <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
-                                {member.skill}
+                    ))}
+                  </div>
+                ) : participants.length === 0 ? (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-center py-16"
+                  >
+                    <div className="relative mb-6">
+                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-green-400 rounded-full blur-2xl opacity-30"></div>
+                      <div className="relative w-24 h-24 bg-gradient-to-r from-emerald-100 to-green-100 rounded-full flex items-center justify-center mx-auto">
+                        <Users className="h-12 w-12 text-emerald-500" />
+                      </div>
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-700 mb-3">아직 체크인한 참가자가 없습니다</h3>
+                    <p className="text-gray-500 text-lg mb-2">QR 코드를 스캔하거나 수동으로 체크인해주세요</p>
+                    <p className="text-gray-400 text-sm">참가자들이 도착하면 실시간으로 목록이 업데이트됩니다</p>
+                  </motion.div>
+                ) : (
+                  <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
+                    {participants.map((p, index) => (
+                      <motion.div
+                        key={p.id}
+                        initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                        whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                        viewport={{ once: true, margin: "-50px" }}
+                        transition={{ duration: 0.6, delay: index * 0.05 }}
+                        className="group bg-gradient-to-br from-white via-gray-50 to-white rounded-lg sm:rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-5 lg:p-6 shadow-lg border border-gray-200/50 hover:shadow-2xl hover:border-emerald-200/50 transition-all duration-300 hover:scale-[1.01] sm:hover:scale-[1.02] transform-gpu"
+                      >
+                        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 mb-2 sm:mb-3 md:mb-4">
+                          <div className="relative">
+                            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full blur-lg opacity-20 group-hover:opacity-30 transition-opacity duration-300"></div>
+                            <div className="relative w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm md:text-base lg:text-lg shadow-lg">
+                              {p.name.charAt(0)}
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-bold text-gray-800 text-sm sm:text-base md:text-lg mb-0.5 sm:mb-1 group-hover:text-emerald-700 transition-colors duration-300 break-words hyphens-auto text-justify leading-tight">{p.name}</h3>
+                            <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-500">
+                              <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
+                              <span className="break-words hyphens-auto text-justify leading-tight">
+                                {(() => {
+                                  try {
+                                    const date = new Date(p.checkinAt);
+                                    return isNaN(date.getTime()) ? '시간 정보 없음' : date.toLocaleTimeString('ko-KR', {
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    });
+                                  } catch {
+                                    return '시간 정보 없음';
+                                  }
+                                })()}
                               </span>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </motion.div>
-                  ))}
-                </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-1 sm:gap-2 flex-wrap">
+                          {p.skill && (
+                            <span className="px-1.5 sm:px-2 md:px-3 py-0.5 sm:py-1 md:py-1.5 bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700 rounded-full text-xs sm:text-sm font-semibold border border-blue-300/50 whitespace-nowrap">
+                              ⚡ Lv.{p.skill}
+                            </span>
+                          )}
+                          {p.teamAssigned && (
+                            <span className="px-1.5 sm:px-2 md:px-3 py-0.5 sm:py-1 md:py-1.5 bg-gradient-to-r from-purple-100 to-purple-200 text-purple-700 rounded-full text-xs sm:text-sm font-semibold border border-purple-300/50 whitespace-nowrap">
+                              🏆 {p.teamAssigned}
+                            </span>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </motion.div>
-        )}
-          </div>
+
+          {/* Team Results Section */}
+          {teams.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.4, duration: 0.8 }}
+            >
+              <Card className="bg-white/95 backdrop-blur-xl border-0 shadow-2xl rounded-3xl overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-amber-50 via-orange-50 to-yellow-50 border-b border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-4 text-3xl font-bold">
+                      <div className="p-3 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl shadow-lg">
+                        <Trophy className="h-8 w-8 text-white" />
+                      </div>
+                      <div>
+                        <div className="text-gray-800">팀 배정 결과</div>
+                        <div className="text-sm text-gray-600 font-normal">완벽하게 구성된 팀을 확인하세요</div>
+                      </div>
+                    </CardTitle>
+                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={shareToKakaoTalk}
+                        className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 hover:from-green-600 hover:to-emerald-600 shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl h-10 px-4 text-sm font-medium"
+                      >
+                        <Share2 className="h-4 w-4 mr-2" />
+                        공유
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={exportToCSV}
+                        className="bg-gradient-to-r from-blue-500 to-purple-500 text-white border-0 hover:from-blue-600 hover:to-purple-600 shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl h-10 px-4 text-sm font-medium"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        내보내기
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {teams.map((team, index) => (
+                      <motion.div
+                        key={team.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, margin: "-50px" }}
+                        transition={{ duration: 0.6, delay: index * 0.1 }}
+                        className={`relative bg-gradient-to-br ${getTeamColor(team.color)} border border-opacity-20 rounded-2xl p-4 md:p-6 shadow-lg hover:shadow-xl transition-all duration-300 group overflow-hidden`}
+                      >
+                        <div className="absolute inset-0 bg-white/10 group-hover:bg-white/20 transition-all duration-300"></div>
+                        <div className="relative z-10">
+                          <div className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6">
+                            <div className={`w-12 h-12 md:w-16 md:h-16 ${getTeamColor(team.color)} rounded-2xl flex items-center justify-center text-white font-bold text-lg md:text-xl shadow-lg`}>
+                              {team.name.split(' ')[1]}
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-lg md:text-xl text-gray-800 mb-1">{team.name}</h3>
+                              <p className="text-gray-600 font-medium text-sm md:text-base">{team.members.length}명 • 평균 Lv.{team.members.length > 0 ? Math.round((team.totalSkill || 0) / team.members.length) : 0}</p>
+                            </div>
+                          </div>
+                          <ul className="space-y-2 md:space-y-3">
+                            {team.members.map((member) => (
+                              <li key={member.id} className="flex items-center justify-between bg-white/60 backdrop-blur-sm rounded-lg md:rounded-xl p-2 md:p-3 hover:bg-white/80 transition-all duration-200">
+                                <span className="font-semibold text-gray-800 text-sm md:text-base">{member.name}</span>
+                                {member.skill && (
+                                  <span className="px-2 md:px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs md:text-sm font-medium">
+                                    Lv.{member.skill}
+                                  </span>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
         </div>
       </div>
     </div>
