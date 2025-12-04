@@ -61,6 +61,53 @@ const EventPage = () => {
   const [isLoadingParticipants, setIsLoadingParticipants] = useState(true);
   const { toast } = useToast();
 
+  // Helper function to generate QR code with better error handling
+  const generateQRCode = async (url: string, options = {}) => {
+    try {
+      console.log('🔄 Generating QR code for URL:', url);
+
+      // Validate URL format
+      if (!url || typeof url !== 'string') {
+        throw new Error('Invalid URL provided for QR code generation');
+      }
+
+      // Check if URL is accessible
+      try {
+        new URL(url);
+      } catch {
+        throw new Error('Invalid URL format');
+      }
+
+      const qrDataUrl = await QRCode.toDataURL(url, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        },
+        errorCorrectionLevel: 'M',
+        ...options
+      });
+
+      console.log('✅ QR code generated successfully, data URL length:', qrDataUrl.length);
+      return qrDataUrl;
+    } catch (error) {
+      console.error('❌ QR code generation failed:', error);
+
+      // Return a simple placeholder SVG as fallback
+      const fallbackSvg = `data:image/svg+xml;base64,${btoa(`
+        <svg width="300" height="300" xmlns="http://www.w3.org/2000/svg">
+          <rect width="300" height="300" fill="#f9fafa"/>
+          <text x="50%" y="40%" font-family="Arial" font-size="16" fill="#999999" text-anchor="middle">QR Code</text>
+          <text x="50%" y="60%" font-family="Arial" font-size="14" fill="#999999" text-anchor="middle">Generation Failed</text>
+          <text x="50%" y="75%" font-family="Arial" font-size="12" fill="#cccccc" text-anchor="middle">${url.substring(0, 30)}...</text>
+        </svg>
+      `)}`;
+
+      return fallbackSvg;
+    }
+  };
+
   // Generate premium invitation card
   const generateInvitation = useCallback(async () => {
     console.log('Generating invitation...', { event, qrUrl });
@@ -152,7 +199,15 @@ const EventPage = () => {
       console.log('Generating QR code on canvas...');
       try {
         const qrCanvas = document.createElement('canvas');
-        await QRCode.toCanvas(qrCanvas, `${window.location.origin}/checkin/${eventId}`, {
+        const qrCtx = qrCanvas.getContext('2d');
+        if (!qrCtx) {
+          throw new Error('QR Canvas context not available');
+        }
+
+        const checkinUrl = `${window.location.origin}/checkin/${eventId}`;
+        console.log('QR URL for invitation:', checkinUrl);
+
+        await QRCode.toCanvas(qrCanvas, checkinUrl, {
           width: 300,
           margin: 2,
           color: {
@@ -169,11 +224,19 @@ const EventPage = () => {
         console.error('❌ QR generation on canvas failed:', qrError);
         // Draw placeholder text instead
         ctx.fillStyle = '#ffffff';
-        ctx.font = '14px Arial';
+        ctx.font = '16px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('QR 코드 생성 실패', 300, 520);
-        ctx.fillText(`직접 접속: ${window.location.origin}/checkin/${eventId}`, 300, 540);
-        ctx.fillText('모바일 브라우저에서 위 주소로 접속하세요', 300, 560);
+        ctx.fillText('QR 코드 생성에 실패했습니다', 300, 500);
+        ctx.fillText('아래 URL을 직접 복사하여 사용하세요:', 300, 525);
+        ctx.fillText(`${window.location.origin}/checkin/${eventId}`, 300, 550);
+        ctx.fillText('모바일 브라우저에서 접속 가능합니다', 300, 575);
+
+        // Also show toast notification
+        toast({
+          title: 'QR 코드 생성 실패',
+          description: '초대장 이미지에 QR코드를 포함할 수 없습니다. URL을 직접 공유해주세요.',
+          variant: 'destructive',
+        });
       }
 
       // Instructions
@@ -507,35 +570,17 @@ const EventPage = () => {
   // Generate QR URL separately to avoid blocking main data load
   useEffect(() => {
     if (!eventId) return;
-    
+
     const generateQR = async () => {
-      try {
-        console.log('Generating QR code for event...');
-        const url = `${window.location.origin}/checkin/${eventId}`;
-        const qrDataUrl = await QRCode.toDataURL(url, {
-          width: 300,
-          margin: 2,
-          color: {
-            dark: '#000000',
-            light: '#FFFFFF'
-          },
-          errorCorrectionLevel: 'M'
-        });
-        setQrUrl(qrDataUrl);
-        console.log('✅ QR code generated successfully for event');
-      } catch (error) {
-        console.error('❌ QR Code generation failed:', error);
-        // Set a placeholder QR URL to prevent blocking
-        setQrUrl('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==');
-      }
+      const url = `${window.location.origin}/checkin/${eventId}`;
+      const qrDataUrl = await generateQRCode(url);
+      setQrUrl(qrDataUrl);
     };
-    
+
     // Delay QR generation slightly to not block initial render
     const timer = setTimeout(generateQR, 100);
     return () => clearTimeout(timer);
-  }, [eventId]);
-
-  const assignTeams = async () => {
+  }, [eventId]);  const assignTeams = async () => {
     console.log('assignTeams called', { numTeams, balanceType, participants });
     
     if (!eventId) return;
