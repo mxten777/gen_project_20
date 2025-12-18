@@ -1318,8 +1318,8 @@ const EventPage = () => {
                             {p.name.charAt(0)}
                           </div>
                           <div className="flex-1">
-                            <p className="font-semibold text-gray-900">{p.name}</p>
-                            <p className="text-xs text-gray-600">
+                            <p className="font-semibold text-gray-800">{p.name}</p>
+                            <p className="text-xs text-gray-500">
                               {(() => {
                                 try {
                                   const date = new Date(p.checkinAt);
@@ -1429,8 +1429,8 @@ const EventPage = () => {
                             </div>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-bold text-gray-900 text-sm sm:text-base md:text-lg mb-0.5 sm:mb-1 group-hover:text-emerald-700 transition-colors duration-300 break-words hyphens-auto text-justify leading-tight">{p.name}</h3>
-                            <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-600">
+                            <h3 className="font-bold text-gray-800 text-sm sm:text-base md:text-lg mb-0.5 sm:mb-1 group-hover:text-emerald-700 transition-colors duration-300 break-words hyphens-auto text-justify leading-tight">{p.name}</h3>
+                            <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-500">
                               <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
                               <span className="break-words hyphens-auto text-justify leading-tight">
                                 {(() => {
