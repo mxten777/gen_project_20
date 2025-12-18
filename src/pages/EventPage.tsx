@@ -129,13 +129,15 @@ const EventPage = () => {
       canvas.width = 600;
       canvas.height = 800;
 
-      // Create gradient background with beautiful two-tone colors
-        const gradient = ctx.createLinearGradient(0, 0, 600, 800);
-        gradient.addColorStop(0, '#3b82f6');    // Blue
-        gradient.addColorStop(0.25, '#8b5cf6'); // Purple
-        gradient.addColorStop(0.5, '#f472b6');  // Rose
-        gradient.addColorStop(0.75, '#fbbf24'); // Amber
-        gradient.addColorStop(1, '#f59e0b');    // Yellow      ctx.fillStyle = gradient;
+      // Create premium gradient background with luxurious colors
+      const gradient = ctx.createLinearGradient(0, 0, 600, 800);
+      gradient.addColorStop(0, '#1e1b4b');    // Deep indigo
+      gradient.addColorStop(0.2, '#312e81');  // Rich purple
+      gradient.addColorStop(0.4, '#7c3aed');  // Vibrant violet
+      gradient.addColorStop(0.6, '#a855f7');  // Bright purple
+      gradient.addColorStop(0.8, '#c084fc');  // Light purple
+      gradient.addColorStop(1, '#e879f9');    // Pink purple
+      ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, 600, 800);
 
       // Add decorative elements
@@ -211,11 +213,15 @@ const EventPage = () => {
           width: 300,
           margin: 2,
           color: {
-            dark: '#000000',
-            light: '#FFFFFF'
+            dark: '#000000',  // Black QR code for visibility
+            light: '#ffffff'  // White background for contrast
           },
           errorCorrectionLevel: 'M'
         });
+
+        // Draw white background for QR code
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(190, 410, 220, 220);
 
         // Draw QR code on main canvas
         ctx.drawImage(qrCanvas, 200, 420, 200, 200);
@@ -266,11 +272,12 @@ const EventPage = () => {
         canvas.height = 800;
 
         const gradient = ctx.createLinearGradient(0, 0, 600, 800);
-        gradient.addColorStop(0, '#3b82f6');    // Blue
-        gradient.addColorStop(0.25, '#8b5cf6'); // Purple
-        gradient.addColorStop(0.5, '#f472b6');  // Rose
-        gradient.addColorStop(0.75, '#fbbf24'); // Amber
-        gradient.addColorStop(1, '#f59e0b');    // Yellow
+        gradient.addColorStop(0, '#1e1b4b');    // Deep indigo
+        gradient.addColorStop(0.2, '#312e81');  // Rich purple
+        gradient.addColorStop(0.4, '#7c3aed');  // Vibrant violet
+        gradient.addColorStop(0.6, '#a855f7');  // Bright purple
+        gradient.addColorStop(0.8, '#c084fc');  // Light purple
+        gradient.addColorStop(1, '#e879f9');    // Pink purple
 
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, 600, 800);
@@ -1311,8 +1318,8 @@ const EventPage = () => {
                             {p.name.charAt(0)}
                           </div>
                           <div className="flex-1">
-                            <p className="font-semibold text-gray-800">{p.name}</p>
-                            <p className="text-xs text-gray-500">
+                            <p className="font-semibold text-gray-900">{p.name}</p>
+                            <p className="text-xs text-gray-600">
                               {(() => {
                                 try {
                                   const date = new Date(p.checkinAt);
@@ -1422,8 +1429,8 @@ const EventPage = () => {
                             </div>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-bold text-gray-800 text-sm sm:text-base md:text-lg mb-0.5 sm:mb-1 group-hover:text-emerald-700 transition-colors duration-300 break-words hyphens-auto text-justify leading-tight">{p.name}</h3>
-                            <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-500">
+                            <h3 className="font-bold text-gray-900 text-sm sm:text-base md:text-lg mb-0.5 sm:mb-1 group-hover:text-emerald-700 transition-colors duration-300 break-words hyphens-auto text-justify leading-tight">{p.name}</h3>
+                            <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-600">
                               <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
                               <span className="break-words hyphens-auto text-justify leading-tight">
                                 {(() => {

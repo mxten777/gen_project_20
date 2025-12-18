@@ -20,7 +20,7 @@ const buttonVariants = cva(
         ghost: "hover:bg-accent hover:text-accent-foreground hover:shadow-sm",
         link: "text-primary underline-offset-4 hover:underline hover:text-primary/80",
         premium:
-          "bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-lg hover:shadow-xl hover:shadow-brand-500/25 hover:from-brand-600 hover:to-brand-700",
+          "bg-gradient-to-r from-primary-600 via-primary-500 to-secondary-600 text-white shadow-lg hover:shadow-premium hover:shadow-primary-500/25 hover:from-primary-700 hover:to-secondary-700",
         glass:
           "bg-glass-200 backdrop-blur-md border border-white/20 text-foreground shadow-lg hover:bg-glass-300 hover:shadow-xl",
       },
