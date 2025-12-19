@@ -1,53 +1,355 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ===== 프리미엄 디자인 시스템 글로벌 스타일 ===== */
+
+/* ===== CSS 변수 (프리미엄 컬러 팔레트) ===== */
 :root {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+  /* Primary Colors (블루-인디고 그라데이션) */
+  --primary-50: #f5f7ff;
+  --primary-100: #e0e7ff;
+  --primary-200: #c7d2fe;
+  --primary-300: #a5b4fc;
+  --primary-400: #818cf8;
+  --primary-500: #6366f1; /* Indigo */
+  --primary-600: #4f46e5;
+  --primary-700: #4338ca;
+  --primary-800: #3730a3;
+  --primary-900: #312e81;
+
+  /* Secondary Colors (민트-스카이) */
+  --secondary-50: #f0fdf4;
+  --secondary-100: #dcfce7;
+  --secondary-200: #bbf7d0;
+  --secondary-300: #86efac;
+  --secondary-400: #4ade80;
+  --secondary-500: #22d3ee; /* Mint */
+  --secondary-600: #2dd4bf;
+  --secondary-700: #14b8a6;
+  --secondary-800: #0d9488;
+  --secondary-900: #115e59;
+
+  /* Background Colors */
+  --bg-main: #f8fafc;
+  --bg-soft: #f1f5f9;
+  --surface-glass: rgba(255,255,255,0.7);
+  --surface-dark-glass: rgba(24,24,27,0.7);
+
+  /* Semantic Colors */
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --info: #0ea5e9;
+
+  /* Glass Effects */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --glass-dark-bg: rgba(24, 24, 27, 0.7);
+  --glass-dark-border: rgba(255, 255, 255, 0.1);
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px 0 rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 16px 0 rgba(31,38,135,0.08);
+  --shadow-xl: 0 8px 32px 0 rgba(31,38,135,0.15);
+  --shadow-glow: 0 0 32px 0 #6366f1;
+
+  /* Gradients */
+  --gradient-primary: linear-gradient(90deg, #6366f1 0%, #0ea5e9 100%);
+  --gradient-secondary: linear-gradient(90deg, #22d3ee 0%, #a3e635 100%);
+  --gradient-bg: linear-gradient(135deg, #f5f7ff 0%, #e0f2fe 100%);
+
+  /* Typography */
+  --font-family-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+  --font-family-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* Spacing Scale (8px grid) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-24: 96px;
+
+  /* Border Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-2xl: 32px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-premium: 700ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Z-index Scale */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-toast: 1080;
+}
+
+/* ===== 다크모드 변수 ===== */
+[data-theme="dark"] {
+  --bg-main: #0f0f0f;
+  --bg-soft: #1a1a1a;
+  --surface-glass: rgba(24,24,27,0.7);
+  --surface-dark-glass: rgba(255,255,255,0.1);
+  --glass-bg: rgba(24, 24, 27, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-dark-bg: rgba(255, 255, 255, 0.1);
+  --glass-dark-border: rgba(255, 255, 255, 0.2);
+}
+
+/* ===== 글로벌 리셋 및 베이스 스타일 ===== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: var(--font-family-primary);
   line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+  -moz-tab-size: 4;
+  tab-size: 4;
   font-feature-settings: 'kern', 'liga', 'calt';
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+  scroll-behavior: smooth;
 }
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
+  font-family: var(--font-family-primary);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.6;
+  color: hsl(var(--foreground));
+  background: var(--bg-main);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+/* ===== 타이포그래피 개선 ===== */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-family-display);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: hsl(var(--foreground));
+}
+
+h1 { font-size: 2.25rem; font-weight: 800; }
+h2 { font-size: 1.875rem; font-weight: 700; }
+h3 { font-size: 1.5rem; font-weight: 600; }
+h4 { font-size: 1.25rem; font-weight: 600; }
+h5 { font-size: 1.125rem; font-weight: 500; }
+h6 { font-size: 1rem; font-weight: 500; }
+
+p {
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+a {
+  color: var(--primary-500);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--primary-600);
+}
+
+/* ===== 버튼 베이스 스타일 ===== */
+button {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  margin: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  border-radius: var(--radius-xl);
+  font-weight: 500;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--primary-500);
+  outline-offset: 2px;
+}
+
+/* ===== 입력 요소 개선 ===== */
+input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  border-radius: var(--radius-xl);
+  border: 2px solid hsl(var(--border));
+  background: hsl(var(--background));
+  padding: 0.75rem 1rem;
+  transition: all var(--transition-normal);
+  color: hsl(var(--foreground));
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* ===== 유틸리티 클래스 ===== */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 2px solid var(--glass-border);
+  box-shadow: var(--shadow-xl);
+}
+
+.glass-card-dark {
+  background: var(--glass-dark-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 2px solid var(--glass-dark-border);
+  box-shadow: var(--shadow-xl);
+}
+
+.gradient-primary {
+  background: var(--gradient-primary);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-bg {
+  background: var(--gradient-bg);
+}
+
+.shadow-glow {
+  box-shadow: var(--shadow-glow);
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+/* ===== 스크롤바 커스터마이징 ===== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-soft);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary-300);
+  border-radius: var(--radius-full);
+  transition: background var(--transition-fast);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-400);
+}
+
+/* ===== 선택 영역 스타일링 ===== */
+::selection {
+  background: rgba(99, 102, 241, 0.2);
+  color: var(--primary-700);
+}
+
+/* ===== 포커스 표시 개선 ===== */
+.focus-ring {
+  @apply focus:outline-none focus:ring-4 focus:ring-blue-200 focus:ring-offset-2;
+}
+
+/* ===== 로딩 애니메이션 ===== */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.shimmer-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-effect::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  animation: shimmer 2s infinite;
+}
+
+/* ===== 반응형 유틸리티 ===== */
+@media (max-width: 768px) {
+  h1 { font-size: 1.875rem; }
+  h2 { font-size: 1.5rem; }
+  h3 { font-size: 1.25rem; }
+
+  .glass-card,
+  .glass-card-dark {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+}
+
+/* ===== 프린트 스타일 ===== */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  .glass-card,
+  .glass-card-dark {
+    background: white !important;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: none !important;
+  }
 }
 
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
   cursor: pointer;
   transition: border-color 0.25s;
 }
